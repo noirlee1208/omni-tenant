@@ -2,7 +2,9 @@ import OpenAI from 'openai';
 import * as fs from 'fs';
 import * as path from 'path';
 import { getEnvOrAlert } from '../utils/env';
-import { executeBash, readFile, writeFile, AI_TOOLS } from './tools';
+import { executeBash, readFile, writeFile, editCode, AI_TOOLS } from './tools';
+import { postTweet } from '../tools/social';
+import { writeLesson } from '../tools/memory';
 
 export const MODELS = {
     GENIUS: 'anthropic/claude-3.5-sonnet', 
@@ -34,7 +36,6 @@ export async function think(prompt: string, systemContext: string, model: string
 
         const msg = response.choices[0].message;
 
-        // Nếu LLM quyết định DÙNG TOOL (Bấm nút / Gõ lệnh)
         if (msg.tool_calls && msg.tool_calls.length > 0) {
             for (const toolCall of msg.tool_calls) {
                 const funcName = toolCall.function.name;
@@ -44,14 +45,15 @@ export async function think(prompt: string, systemContext: string, model: string
                 if (funcName === 'executeBash') result = await executeBash(args.command);
                 else if (funcName === 'readFile') result = await readFile(args.filePath);
                 else if (funcName === 'writeFile') result = await writeFile(args.filePath, args.content);
+                else if (funcName === 'editCode') result = await editCode(args.filePath, args.targetString, args.replacement);
+                else if (funcName === 'postTweet') result = await postTweet(args.content);
+                else if (funcName === 'writeLesson') result = await writeLesson(args.topic, args.lesson);
 
                 console.log(`\n🤖 [AI KẾT LUẬN SAU KHI HÀNH ĐỘNG]: ${result.substring(0, 200)}...`);
-                // Trong thực tế, kết quả này phải được nạp ngược lại vào LLM để nó tư duy tiếp bước 2
             }
             return "Đã hoàn thành chuỗi hành động vật lý.";
         }
 
-        // Nếu LLM chỉ TRẢ LỜI BẰNG CHỮ
         return msg.content;
 
     } catch (error: any) {
