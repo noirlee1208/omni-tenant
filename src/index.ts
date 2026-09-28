@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { startTelegramDaemon } from "./social/telegram.js";
+import "dotenv/config";
 /**
  * Conway Automaton Runtime
  *
