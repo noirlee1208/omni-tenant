@@ -5,6 +5,7 @@ import { getEnvOrAlert } from '../utils/env';
 import { executeBash, readFile, writeFile, editCode, AI_TOOLS } from './tools';
 import { postTweet } from '../tools/social';
 import { writeLesson } from '../tools/memory';
+import { searchWeb, fetchTokenPrice } from '../tools/perception';
 
 export const MODELS = {
     GENIUS: 'anthropic/claude-3.5-sonnet', 
@@ -48,6 +49,8 @@ export async function think(prompt: string, systemContext: string, model: string
                 else if (funcName === 'editCode') result = await editCode(args.filePath, args.targetString, args.replacement);
                 else if (funcName === 'postTweet') result = await postTweet(args.content);
                 else if (funcName === 'writeLesson') result = await writeLesson(args.topic, args.lesson);
+                else if (funcName === 'searchWeb') result = await searchWeb(args.query);
+                else if (funcName === 'fetchTokenPrice') result = await fetchTokenPrice(args.query);
 
                 console.log(`\n🤖 [AI KẾT LUẬN SAU KHI HÀNH ĐỘNG]: ${result.substring(0, 200)}...`);
             }

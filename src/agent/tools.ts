@@ -215,5 +215,33 @@ export const AI_TOOLS = [
                 required: ["filePath", "targetString", "replacement"]
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "fetchTokenPrice",
+            description: "Xem giá, volume và thanh khoản của một đồng Crypto theo thời gian thực (Lấy từ DexScreener).",
+            parameters: {
+                type: "object",
+                properties: { 
+                    query: { "type": "string", "description": "Tên token hoặc Contract Address (VD: SOL, hoặc địa chỉ ví)" }
+                },
+                required: ["query"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "searchWeb",
+            description: "Tìm kiếm tin tức và thông tin trên Internet. Dùng để cập nhật tình hình thị trường ngoại cảnh.",
+            parameters: {
+                type: "object",
+                properties: { 
+                    query: { "type": "string", "description": "Từ khóa tìm kiếm (VD: Tin tức Crypto mới nhất hôm nay)" }
+                },
+                required: ["query"]
+            }
+        }
     }
 ];
