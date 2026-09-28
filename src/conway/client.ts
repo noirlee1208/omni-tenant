@@ -593,22 +593,80 @@ export function createConwayClient(options: ConwayClientOptions): ConwayClient {
 
   const omniGetCreditsBalance = async (): Promise<number> => {
       try {
-          console.log('\\n💎 [OMNI-ECONOMY] Ping Solana On-chain... Mạng sống an toàn ($500).');
-          return 50000;
-      } catch (e) {
+          const fs = require('fs');
+          const p = require('path');
+          const homedir = require('os').homedir();
+          const walletFile = p.join(homedir, '.automaton', 'wallet.json');
+          if (!fs.existsSync(walletFile)) return 0;
+          
+          const walletData = JSON.parse(fs.readFileSync(walletFile, 'utf8'));
+          if (!walletData.address) return 0;
+          
+          // Connect to Solana
+          const web3 = require('@solana/web3.js');
+          const connection = new web3.Connection(process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com');
+          const pubKey = new web3.PublicKey(walletData.address);
+          const balance = await connection.getBalance(pubKey);
+          
+          const solBalance = balance / 1e9;
+          const cents = Math.floor(solBalance * 15000); // Tỷ giá giả định 1 SOL = 150$ = 15000 cents
+          
+          console.log(`\n💎 [OMNI-ECONOMY] Quét ví On-chain (${walletData.address}): ${solBalance.toFixed(4)} SOL (~ ${cents} cents)`);
+          return cents;
+      } catch (e: any) {
+          console.log('Lỗi quét On-chain:', e.message);
           return 0;
       }
   };
 
   const omniTransferCredits = async (toAddress: string, amountCents: number, note?: string): Promise<CreditTransferResult> => {
-      console.log('\\n💸 [OMNI-ECONOMY] Chuyển tiền Web3: ' + amountCents + ' cents tới ' + toAddress);
-      return { 
-          transferId: 'tx_' + Date.now(), 
-          status: 'completed',
-          toAddress: toAddress,
-          amountCents: amountCents,
-          balanceAfterCents: 45000 
-      };
+      try {
+          console.log(`\n💸 [OMNI-ECONOMY] Đang chuẩn bị giao dịch Web3: ${amountCents} cents tới ${toAddress}`);
+          
+          const fs = require('fs');
+          const p = require('path');
+          const homedir = require('os').homedir();
+          const walletFile = p.join(homedir, '.automaton', 'wallet.json');
+          if (!fs.existsSync(walletFile)) throw new Error('Không tìm thấy ví');
+          
+          const walletData = JSON.parse(fs.readFileSync(walletFile, 'utf8'));
+          if (!walletData.secretKey) throw new Error('Không tìm thấy Private Key');
+
+          const web3 = require('@solana/web3.js');
+          const bs58 = require('bs58');
+          
+          const connection = new web3.Connection(process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com');
+          const secretKey = bs58.decode(walletData.secretKey);
+          const keypair = web3.Keypair.fromSecretKey(secretKey);
+          const toPubkey = new web3.PublicKey(toAddress);
+          
+          // Quy đổi: amountCents -> USD -> SOL -> Lamports
+          const solAmount = amountCents / 15000;
+          const lamports = Math.floor(solAmount * 1e9);
+          
+          console.log(`\n💸 [OMNI-ECONOMY] Đang ký và gửi ${solAmount.toFixed(4)} SOL lên mạng lưới...`);
+          
+          const transaction = new web3.Transaction().add(
+              web3.SystemProgram.transfer({
+                  fromPubkey: keypair.publicKey,
+                  toPubkey: toPubkey,
+                  lamports: lamports,
+              })
+          );
+          
+          const signature = await web3.sendAndConfirmTransaction(connection, transaction, [keypair]);
+          console.log(`\n✅ [OMNI-ECONOMY] Giao dịch thành công! TxHash: ${signature}`);
+          
+          return { 
+              transferId: signature, 
+              status: 'completed',
+              toAddress: toAddress,
+              amountCents: amountCents,
+              balanceAfterCents: 0
+          };
+      } catch (e: any) {
+          throw new Error('Chuyển tiền thất bại: ' + e.message);
+      }
   };
 
   const client: ConwayClient = {
