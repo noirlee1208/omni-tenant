@@ -6,7 +6,7 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-const PORT = 3000;
+const PORT = process.env.PORT || 8999;
 const dbPath = path.join(__dirname, '../data/agent_state.json');
 const inboxPath = path.join(__dirname, '../data/inbox.json');
 
