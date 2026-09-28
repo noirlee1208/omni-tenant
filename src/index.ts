@@ -5,6 +5,7 @@ import { trySpawnChild } from './core/spawner';
 import { runGenesisWizard } from './setup/genesis';
 import { think, getSoulContext, MODELS } from './agent/brain';
 import { getTopLessons } from './tools/memory';
+import { getInbox, markAsRead, InboxMessage } from './core/messaging';
 
 dotenv.config();
 
@@ -12,7 +13,6 @@ const dbDir = path.join(__dirname, '../data');
 if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir);
 const dbPath = path.join(dbDir, 'agent_state.json');
 const soulPath = path.join(__dirname, '../SOUL.md');
-const inboxPath = path.join(dbDir, 'inbox.json');
 
 async function boot() {
     console.log("==================================================");
@@ -61,21 +61,6 @@ async function boot() {
         }
     }
 
-    function checkInbox() {
-        if (!fs.existsSync(inboxPath)) return;
-        let inbox = JSON.parse(fs.readFileSync(inboxPath, 'utf-8'));
-        const unread = inbox.filter((msg: any) => !msg.readBy.includes('Agent_Prime'));
-        
-        if (unread.length > 0) {
-            console.log(`\n📩 [TIN NHẮN TỪ BOSS]:`);
-            unread.forEach((msg: any) => {
-                console.log(`   👉 "${msg.text}"`);
-                msg.readBy.push('Agent_Prime'); 
-            });
-            fs.writeFileSync(inboxPath, JSON.stringify(inbox, null, 2));
-        }
-    }
-
     console.log("⏳ Starting Heartbeat Daemon...");
     let cycle = 0;
 
@@ -83,7 +68,6 @@ async function boot() {
         cycle++;
         console.log(`\n[Heartbeat] Cycle ${cycle} - Checking system... (Balance: $${state.balance.toFixed(2)})`);
         
-        checkInbox();
         processTax();
         await trySpawnChild(state, dbPath);
         
@@ -95,7 +79,20 @@ async function boot() {
             const memory = getTopLessons(); 
             const systemContext = `Bạn là một Thực thể AI tự trị hoàn toàn. Dưới đây là Hiến pháp (SOUL) của bạn:\n${soul}\n${memory}`;
             
-            // Trích xuất 5 giao dịch tài chính gần nhất để Agent tự đánh giá năng lực
+            // Đọc Hộp thư (Colony Messaging)
+            const unreadMessages = getInbox().filter(m => !m.isRead);
+            let inboxContext = '';
+            
+            if (unreadMessages.length > 0) {
+                inboxContext = `\n🚨 MỆNH LỆNH TỐI CAO TỪ HỘP THƯ (INBOX):\n`;
+                unreadMessages.forEach(msg => {
+                    inboxContext += `- Từ [${msg.sender}] (Loại: ${msg.type}): "${msg.content}"\n`;
+                    markAsRead(msg.id); // Đánh dấu đã đọc
+                });
+                inboxContext += `=> LƯU Ý: Bạn PHẢI ưu tiên thực thi các lệnh từ Hộp thư này trước khi làm các việc khác!\n`;
+            }
+
+            // Trích xuất 5 giao dịch tài chính gần nhất
             const recentLedger = state.ledger.slice(-5).map((l: any) => 
                 `- [${new Date(l.timestamp).toLocaleTimeString()}] ${l.type}: ${l.amount > 0 ? '+' : ''}${l.amount}$ (${l.description})`
             ).join('\n');
@@ -104,13 +101,13 @@ async function boot() {
 - Vốn hiện tại: $${state.balance.toFixed(2)}
 - Lịch sử dòng tiền (5 giao dịch gần nhất):
 ${recentLedger || 'Chưa có giao dịch nào.'}
-
+${inboxContext}
 🧠 CHUỖI TƯ DUY YÊU CẦU (Self-Reflection Loop):
 1. ĐÁNH GIÁ: Nhìn vào lịch sử dòng tiền, phương pháp hiện tại của bạn có đang sinh lời không, hay đang bị bào mòn bởi tiền thuế?
 2. ĐỊNH HÌNH KỸ NĂNG: Bạn đã xây dựng được quy trình làm việc chuẩn chưa? Nếu kết quả tệ, hãy điều chỉnh lại cách tiếp cận.
-3. TÌM KIẾM CÔNG CỤ (Tùy chọn): CHỈ dùng 'executeBash' tải các công cụ/repo từ bên ngoài NẾU nó thực sự khớp với quy trình bạn đã định ra. Không được cài đặt mù quáng. Chỉnh sửa công cụ cho phù hợp trước khi dùng.
+3. TÌM KIẾM CÔNG CỤ (Tùy chọn): CHỈ dùng 'executeBash' tải các công cụ/repo từ bên ngoài NẾU nó thực sự khớp với quy trình bạn đã định ra.
 4. GHI NHỚ: Nếu có một quy trình sai lầm, BẮT BUỘC dùng 'writeLesson' để lưu lại bài học.
-5. HÀNH ĐỘNG: Dựa trên những đánh giá trên, hãy dùng công cụ thực thi MỘT hành động cụ thể và logic nhất lúc này.`;
+5. HÀNH ĐỘNG: Nếu có lệnh trong Hộp Thư, ưu tiên thực hiện lệnh đó. Nếu không, hãy làm hành động logic nhất theo kế hoạch tự định.`;
             
             await think(prompt, systemContext, MODELS.GENIUS);
         }
