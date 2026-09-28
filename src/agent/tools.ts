@@ -243,5 +243,19 @@ export const AI_TOOLS = [
                 required: ["query"]
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "broadcastToSwarm",
+            description: "Gửi một tin nhắn chia sẻ kiến thức, chiến thuật hoặc cảnh báo cho toàn bộ các Agent con/mẹ trong bầy đàn. Các Agent khác sẽ đọc được ở nhịp tim tiếp theo.",
+            parameters: {
+                type: "object",
+                properties: { 
+                    content: { "type": "string", "description": "Nội dung muốn chia sẻ cho bầy đàn" }
+                },
+                required: ["content"]
+            }
+        }
     }
 ];

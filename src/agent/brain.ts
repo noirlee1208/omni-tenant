@@ -6,6 +6,7 @@ import { executeBash, readFile, writeFile, editCode, AI_TOOLS } from './tools';
 import { postTweet } from '../tools/social';
 import { writeLesson } from '../tools/memory';
 import { searchWeb, fetchTokenPrice } from '../tools/perception';
+import { broadcastToSwarm } from '../core/messaging';
 
 export const MODELS = {
     GENIUS: 'anthropic/claude-3.5-sonnet', 
@@ -51,6 +52,7 @@ export async function think(prompt: string, systemContext: string, model: string
                 else if (funcName === 'writeLesson') result = await writeLesson(args.topic, args.lesson);
                 else if (funcName === 'searchWeb') result = await searchWeb(args.query);
                 else if (funcName === 'fetchTokenPrice') result = await fetchTokenPrice(args.query);
+                else if (funcName === 'broadcastToSwarm') result = await broadcastToSwarm(args.content);
 
                 console.log(`\n🤖 [AI KẾT LUẬN SAU KHI HÀNH ĐỘNG]: ${result.substring(0, 200)}...`);
             }

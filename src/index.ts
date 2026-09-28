@@ -79,17 +79,25 @@ async function boot() {
             const memory = getTopLessons(); 
             const systemContext = `Bạn là một Thực thể AI tự trị hoàn toàn. Dưới đây là Hiến pháp (SOUL) của bạn:\n${soul}\n${memory}`;
             
-            // Đọc Hộp thư (Colony Messaging)
+            // Đọc Hộp thư lệnh (Colony Messaging)
             const unreadMessages = getInbox().filter(m => !m.isRead);
             let inboxContext = '';
             
             if (unreadMessages.length > 0) {
-                inboxContext = `\n🚨 MỆNH LỆNH TỐI CAO TỪ HỘP THƯ (INBOX):\n`;
+                inboxContext = `\n🚨 MỆNH LỆNH TỐI CAO TỪ HỘP THƯ:\n`;
                 unreadMessages.forEach(msg => {
                     inboxContext += `- Từ [${msg.sender}] (Loại: ${msg.type}): "${msg.content}"\n`;
-                    markAsRead(msg.id); // Đánh dấu đã đọc
+                    markAsRead(msg.id);
                 });
                 inboxContext += `=> LƯU Ý: Bạn PHẢI ưu tiên thực thi các lệnh từ Hộp thư này trước khi làm các việc khác!\n`;
+            }
+
+            // Đọc tin tức nội bộ từ Bầy đàn (Swarm)
+            const { getSwarmMessages } = require('./core/messaging');
+            const swarmLogs = getSwarmMessages().slice(-3); // Lấy 3 tin mới nhất
+            let swarmContext = '';
+            if (swarmLogs.length > 0) {
+                swarmContext = `\n🐝 THÔNG TIN TỪ BẦY ĐÀN (SWARM):\n` + swarmLogs.map((s: any) => `- ${s.sender}: ${s.content}`).join('\n');
             }
 
             // Trích xuất 5 giao dịch tài chính gần nhất
@@ -101,13 +109,14 @@ async function boot() {
 - Vốn hiện tại: $${state.balance.toFixed(2)}
 - Lịch sử dòng tiền (5 giao dịch gần nhất):
 ${recentLedger || 'Chưa có giao dịch nào.'}
+${swarmContext}
 ${inboxContext}
 🧠 CHUỖI TƯ DUY YÊU CẦU (Self-Reflection Loop):
-1. ĐÁNH GIÁ: Nhìn vào lịch sử dòng tiền, phương pháp hiện tại của bạn có đang sinh lời không, hay đang bị bào mòn bởi tiền thuế?
-2. ĐỊNH HÌNH KỸ NĂNG: Bạn đã xây dựng được quy trình làm việc chuẩn chưa? Nếu kết quả tệ, hãy điều chỉnh lại cách tiếp cận.
-3. TÌM KIẾM CÔNG CỤ (Tùy chọn): CHỈ dùng 'executeBash' tải các công cụ/repo từ bên ngoài NẾU nó thực sự khớp với quy trình bạn đã định ra.
-4. GHI NHỚ: Nếu có một quy trình sai lầm, BẮT BUỘC dùng 'writeLesson' để lưu lại bài học.
-5. HÀNH ĐỘNG: Nếu có lệnh trong Hộp Thư, ưu tiên thực hiện lệnh đó. Nếu không, hãy làm hành động logic nhất theo kế hoạch tự định.`;
+1. ĐÁNH GIÁ: Phương pháp hiện tại của bạn có sinh lời không?
+2. ĐỊNH HÌNH KỸ NĂNG: Nếu chưa có quy trình làm việc chuẩn, hãy tạo ra nó.
+3. TÌM KIẾM CÔNG CỤ: CHỈ dùng 'executeBash' tải công cụ từ bên ngoài NẾU nó khớp với quy trình.
+4. GHI NHỚ VÀ CHIA SẺ: Nếu có lỗi, dùng 'writeLesson'. Nếu có chiến thuật hay, hãy dùng 'broadcastToSwarm' để báo cho đồng loại.
+5. HÀNH ĐỘNG: Nếu có lệnh Hộp Thư, ưu tiên thực hiện. Nếu không, hãy làm hành động logic nhất theo kế hoạch.`;
             
             await think(prompt, systemContext, MODELS.GENIUS);
         }
