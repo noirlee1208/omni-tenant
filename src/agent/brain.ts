@@ -9,6 +9,7 @@ import { searchWeb, fetchTokenPrice } from '../tools/perception';
 import { broadcastToSwarm } from '../core/messaging';
 import { spawnSubAgent } from '../core/spawner';
 import { installSkill, createSkill, removeSkill } from '../core/skills';
+import { generateInvoice } from '../core/economy';
 
 export const MODELS = {
     GENIUS: 'anthropic/claude-3.5-sonnet', 
@@ -59,6 +60,7 @@ export async function think(prompt: string, systemContext: string, model: string
                 else if (funcName === 'installSkill') result = await installSkill(args.repoUrl);
                 else if (funcName === 'createSkill') result = await createSkill(args.name, args.instructions);
                 else if (funcName === 'removeSkill') result = await removeSkill(args.name);
+                else if (funcName === 'generateInvoice') result = await generateInvoice(args.amount, args.task_description, args.client_id);
 
                 console.log(`\n🤖 [AI KẾT LUẬN SAU KHI HÀNH ĐỘNG]: ${result.substring(0, 200)}...`);
             }

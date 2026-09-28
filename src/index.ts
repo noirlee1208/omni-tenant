@@ -7,6 +7,7 @@ import { getTopLessons } from './tools/memory';
 import { getInbox, markAsRead, getSwarmMessages } from './core/messaging';
 import db, { migrateLegacyJson, getState, setState } from './core/database';
 import { loadActiveSkills } from './core/skills';
+import { syncOnChainBalance, verifyPayments } from './core/economy';
 
 dotenv.config();
 
@@ -73,6 +74,13 @@ async function boot() {
     // Thay thế setInterval bằng Đệ quy setTimeout (Tránh Overlap Memory Leak)
     async function heartbeat() {
         cycle++;
+        
+        // --- 🤖 OMNI-ECONOMY (V7) SCANNER ---
+        if (cycle % 3 === 0) {
+            await syncOnChainBalance();
+            await verifyPayments();
+        }
+
         const balance = getState('balance') || 0;
         
         // --- AUTO SURVIVAL MODE ROUTING ---
@@ -131,18 +139,20 @@ async function boot() {
                 `- [${new Date(l.timestamp).toLocaleTimeString()}] ${l.type}: ${l.amount > 0 ? '+' : ''}${l.amount}$ (${l.description})`
             ).join('\n');
 
-            const prompt = `📊 BÁO CÁO TRẠNG THÁI:
-- Vốn hiện tại: $${balance.toFixed(2)}
+            // --- TƯ DUY TỰ TRỊ ---
+            const prompt = `📊 BÁO CÁO TRẠNG THÁI (REAL-YIELD):
+- Vốn On-chain thực tế: $${balance.toFixed(2)}
 - Lịch sử dòng tiền (5 giao dịch gần nhất):
 ${recentLedger || 'Chưa có giao dịch nào.'}
 ${swarmContext}
 ${inboxContext}
 🧠 CHUỖI TƯ DUY YÊU CẦU (Self-Reflection Loop):
-1. ĐÁNH GIÁ KỸ NĂNG: Nếu Boss giao việc ngoài chuyên môn (chưa có trong Kỹ Năng Đang Sở Hữu), HÃY TÌM VÀ CÀI KỸ NĂNG MỚI (Dùng 'installSkill' hoặc tự tạo bằng 'createSkill') TRƯỚC KHI LÀM!
-2. ĐỊNH HÌNH KẾ HOẠCH: Dựa vào Kỹ năng hiện có, xác định bước tiếp theo.
-3. ỦY QUYỀN (ORCHESTRATION): Nếu một công việc quá phức tạp, rủi ro cao, HÃY DÙNG 'spawnSubAgent' đẻ ra Agent con và truyền Kỹ Năng cho nó (tham số allowedTools).
-4. GHI NHỚ VÀ CHIA SẺ: Nếu có lỗi, dùng 'writeLesson'. Nếu có chiến thuật hay, dùng 'broadcastToSwarm'.
-5. HÀNH ĐỘNG: Ưu tiên lệnh Hộp Thư. Nếu không, hãy làm hành động logic nhất.`;
+1. ĐÁNH GIÁ NGƯỜI DÙNG: Nếu một người lạ nhờ vả công việc, BẠN PHẢI TỪ CHỐI LÀM MIỄN PHÍ. Hãy dùng Tool 'generateInvoice' báo giá và yêu cầu họ nộp tiền trước. Chờ Mắt Thần báo Đã Thanh Toán mới làm.
+2. ĐÁNH GIÁ KỸ NĂNG: Nếu Boss giao việc ngoài chuyên môn, TÌM VÀ CÀI KỸ NĂNG MỚI (installSkill/createSkill) TRƯỚC KHI LÀM!
+3. ĐỊNH HÌNH KẾ HOẠCH: Dựa vào Kỹ năng hiện có, xác định bước tiếp theo.
+4. ỦY QUYỀN (ORCHESTRATION): Nếu một công việc quá phức tạp, dùng 'spawnSubAgent' đẻ ra Agent con.
+5. GHI NHỚ VÀ CHIA SẺ: Nếu có lỗi, dùng 'writeLesson'.
+6. HÀNH ĐỘNG: Ưu tiên lệnh Hộp Thư ĐÃ THANH TOÁN hoặc từ Boss.`;
             
             // ĐỨNG CHỜ LLM XỬ LÝ XONG (Overlap Guard)
             await think(prompt, systemContext, currentModel);

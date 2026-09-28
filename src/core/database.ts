@@ -48,9 +48,18 @@ db.exec(`
         lesson TEXT,
         timestamp TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS invoices (
+        id TEXT PRIMARY KEY,
+        client_id TEXT,
+        amount REAL,
+        status TEXT,
+        task_description TEXT,
+        created_at TEXT
+    );
 `);
 
-console.log(`🗄️ [DATABASE] Khởi tạo SQLite thành công tại: ${dbPath}`);
+console.log(`🗄️ [DATABASE] Khởi tạo SQLite thành công (V7 Omni-Economy) tại: ${dbPath}`);
 
 // --- 2. CÁC HÀM TIỆN ÍCH CƠ BẢN ---
 export function getState(key: string): any {

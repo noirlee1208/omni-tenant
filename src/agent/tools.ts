@@ -312,5 +312,21 @@ export const AI_TOOLS = [
                 required: ["name"]
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "generateInvoice",
+            description: "Xuất hóa đơn thanh toán (Web3 Paywall) cho người lạ. Chỉ dùng khi có khách hàng nhờ vả dịch vụ hoặc viết code. Trả về hướng dẫn nạp tiền cho khách.",
+            parameters: {
+                type: "object",
+                properties: { 
+                    amount: { "type": "number", "description": "Số tiền (USDC) cần thu cho dịch vụ này" },
+                    task_description: { "type": "string", "description": "Mô tả ngắn gọn công việc sẽ làm sau khi nhận được tiền" },
+                    client_id: { "type": "string", "description": "Tên hoặc ID của người yêu cầu (Nếu có)" }
+                },
+                required: ["amount", "task_description"]
+            }
+        }
     }
 ];
