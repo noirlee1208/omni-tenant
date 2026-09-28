@@ -8,6 +8,7 @@ import { writeLesson } from '../tools/memory';
 import { searchWeb, fetchTokenPrice } from '../tools/perception';
 import { broadcastToSwarm } from '../core/messaging';
 import { spawnSubAgent } from '../core/spawner';
+import { installSkill, createSkill, removeSkill } from '../core/skills';
 
 export const MODELS = {
     GENIUS: 'anthropic/claude-3.5-sonnet', 
@@ -55,6 +56,9 @@ export async function think(prompt: string, systemContext: string, model: string
                 else if (funcName === 'fetchTokenPrice') result = await fetchTokenPrice(args.query);
                 else if (funcName === 'broadcastToSwarm') result = await broadcastToSwarm(args.content);
                 else if (funcName === 'spawnSubAgent') result = await spawnSubAgent(args.roleName, args.mission, args.budget, args.allowedTools);
+                else if (funcName === 'installSkill') result = await installSkill(args.repoUrl);
+                else if (funcName === 'createSkill') result = await createSkill(args.name, args.instructions);
+                else if (funcName === 'removeSkill') result = await removeSkill(args.name);
 
                 console.log(`\n🤖 [AI KẾT LUẬN SAU KHI HÀNH ĐỘNG]: ${result.substring(0, 200)}...`);
             }

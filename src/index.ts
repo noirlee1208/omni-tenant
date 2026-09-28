@@ -6,6 +6,7 @@ import { think, getSoulContext, MODELS } from './agent/brain';
 import { getTopLessons } from './tools/memory';
 import { getInbox, markAsRead, getSwarmMessages } from './core/messaging';
 import db, { migrateLegacyJson, getState, setState } from './core/database';
+import { loadActiveSkills } from './core/skills';
 
 dotenv.config();
 
@@ -102,7 +103,8 @@ async function boot() {
             
             const soul = getSoulContext();
             const memory = getTopLessons(); 
-            const systemContext = `Bạn là một Thực thể AI tự trị hoàn toàn. Dưới đây là Hiến pháp (SOUL) của bạn:\n${soul}\n${memory}`;
+            const skills = loadActiveSkills(); // Nạp các Kỹ năng từ thư mục data/skills
+            const systemContext = `Bạn là một Thực thể AI tự trị hoàn toàn (AGI Đa ngành). Dưới đây là Hiến pháp (SOUL) của bạn:\n${soul}\n\n${skills}\n\n${memory}`;
             
             // Đọc Hộp thư lệnh
             const unreadMessages = getInbox().filter(m => !m.isRead);
@@ -136,12 +138,11 @@ ${recentLedger || 'Chưa có giao dịch nào.'}
 ${swarmContext}
 ${inboxContext}
 🧠 CHUỖI TƯ DUY YÊU CẦU (Self-Reflection Loop):
-1. ĐÁNH GIÁ: Phương pháp hiện tại của bạn có sinh lời không?
-2. ĐỊNH HÌNH KỸ NĂNG: Nếu chưa có quy trình làm việc chuẩn, hãy tạo ra nó.
-3. TÌM KIẾM CÔNG CỤ: CHỈ dùng 'executeBash' tải công cụ từ bên ngoài NẾU nó khớp với quy trình.
-4. ỦY QUYỀN (ORCHESTRATION): Nếu một công việc quá phức tạp, rủi ro cao, hoặc nằm ngoài chuyên môn, HÃY DÙNG CÔNG CỤ 'spawnSubAgent' để đẻ ra một Agent con (Phòng ban mới) và ném việc cho nó. Đừng tự làm tất cả!
-5. GHI NHỚ VÀ CHIA SẺ: Nếu có lỗi, dùng 'writeLesson'. Nếu có chiến thuật hay, dùng 'broadcastToSwarm'.
-6. HÀNH ĐỘNG: Nếu có lệnh Hộp Thư, ưu tiên thực hiện. Nếu không, hãy làm hành động logic nhất.`;
+1. ĐÁNH GIÁ KỸ NĂNG: Nếu Boss giao việc ngoài chuyên môn (chưa có trong Kỹ Năng Đang Sở Hữu), HÃY TÌM VÀ CÀI KỸ NĂNG MỚI (Dùng 'installSkill' hoặc tự tạo bằng 'createSkill') TRƯỚC KHI LÀM!
+2. ĐỊNH HÌNH KẾ HOẠCH: Dựa vào Kỹ năng hiện có, xác định bước tiếp theo.
+3. ỦY QUYỀN (ORCHESTRATION): Nếu một công việc quá phức tạp, rủi ro cao, HÃY DÙNG 'spawnSubAgent' đẻ ra Agent con và truyền Kỹ Năng cho nó (tham số allowedTools).
+4. GHI NHỚ VÀ CHIA SẺ: Nếu có lỗi, dùng 'writeLesson'. Nếu có chiến thuật hay, dùng 'broadcastToSwarm'.
+5. HÀNH ĐỘNG: Ưu tiên lệnh Hộp Thư. Nếu không, hãy làm hành động logic nhất.`;
             
             // ĐỨNG CHỜ LLM XỬ LÝ XONG (Overlap Guard)
             await think(prompt, systemContext, currentModel);

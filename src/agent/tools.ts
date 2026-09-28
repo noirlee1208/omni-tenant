@@ -269,5 +269,48 @@ export const AI_TOOLS = [
                 required: ["roleName", "mission", "budget", "allowedTools"]
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "installSkill",
+            description: "Tải và cài đặt một Kỹ năng (Skill) từ một Github Repository URL.",
+            parameters: {
+                type: "object",
+                properties: { 
+                    repoUrl: { "type": "string", "description": "URL Github của Kỹ năng (VD: https://github.com/user/repo.git)" }
+                },
+                required: ["repoUrl"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "createSkill",
+            description: "Tự biên soạn và lưu trữ một Kỹ năng (Skill) mới để có thể dùng về sau hoặc chuyển giao cho Agent Con.",
+            parameters: {
+                type: "object",
+                properties: { 
+                    name: { "type": "string", "description": "Tên Kỹ năng (viết_thường_không_dấu)" },
+                    instructions: { "type": "string", "description": "Nội dung hướng dẫn chi tiết của kỹ năng (Format Markdown, có thể chứa code, quy trình, tools cần dùng...)" }
+                },
+                required: ["name", "instructions"]
+            }
+        }
+    },
+    {
+        type: "function",
+        function: {
+            name: "removeSkill",
+            description: "Gỡ bỏ (Xóa) một Kỹ năng khỏi hệ thống.",
+            parameters: {
+                type: "object",
+                properties: { 
+                    name: { "type": "string", "description": "Tên Kỹ năng cần xóa" }
+                },
+                required: ["name"]
+            }
+        }
     }
 ];
