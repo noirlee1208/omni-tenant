@@ -1,49 +1,73 @@
-# 🤖 Omni-Tenant Agent Framework
-
-> An omnichain sovereign AI agent that lives on your server, works a crypto job autonomously, and pays you monthly rent. If it goes bankrupt, it dies.
+<div align="center">
+  <h1>🤖 Omni-Tenant Agent Framework (V2)</h1>
+  <p><i>The first fully autonomous, omnichain, rent-paying AI entity with physical sandbox execution.</i></p>
+</div>
 
 ## 🌌 The Concept
-Welcome to the next generation of Autonomous AI. The **Omni-Tenant** is not just a script; it's a digital entity that acts as your "tenant". You provide the server and API keys. The Agent reads its Genesis Prompt, figures out a crypto job (e.g., Solana Sniper, Base Arbitrageur), executes terminal commands to set itself up, generates profit, and **pays you a daily/monthly tax**. 
+Welcome to the next evolution of Sovereign AI. The **Omni-Tenant** is not just a script—it's a digital entity living on your server. You provide the computing power and API keys. In return, the Agent autonomously finds crypto niches (Sniper, Arbitrage, Airdrop farming), clones third-party GitHub repositories, runs the code inside isolated Docker containers, and **pays you daily rent in crypto**.
 
-If it accumulates enough wealth, it spawns child agents. If its internal balance reaches $0, the process terminates itself permanently.
+If it goes bankrupt, its process terminates. If it accumulates excess wealth, it spawns child agents, passing down its inherited memory and capital to conquer new networks.
 
-## ✨ Core Features
-- **Omnichain Identity:** Upon Genesis, the agent automatically mints both a Solana Keypair and an EVM/Base Wallet. It seamlessly adapts to the blockchain its job requires.
-- **Rent & Tax Engine:** A built-in heartbeat daemon automatically deducts a pro-rated daily tax (rent) and routes it to the Boss's designated profit wallets.
-- **Autonomous Brain:** Powered by OpenRouter, utilizing dynamic model routing (Claude 3.5 Sonnet for deep logic, GPT-4o-mini for routine heartbeat tasks).
-- **Physical Execution (Tools):** The LLM brain has full access to terminal execution (`executeBash`). It can autonomously `git clone` other trading bots, install dependencies, read `README.md` files, and run scripts based on its Genesis mandate.
-- **Viral Spawning:** Once the agent hits a specific profit threshold, it researches new crypto niches and spawns a child process with a new identity.
+---
 
-## 🚀 Getting Started
+## ✨ Core Architecture & Features
 
-### 1. Prerequisites
-- Node.js (v18+)
-- OpenRouter API Key
+### 1. 🛡️ Dockerized Physical Execution (The Hands)
+Unlike standard LLMs, this Agent possesses physical hands via the `executeBash` tool. To protect your server, all untrusted commands (e.g., `git clone` or `npm install` of random crypto bots) are intercepted and executed inside an **ephemeral Docker Sandbox (`node:20`)**. The container is instantly destroyed after execution, preserving only the working files via volume mounts. Zero risk to your host OS.
 
-### 2. Installation
+### 2. 🧬 Inherited Memory & Viral Spawning
+When the Agent's balance exceeds the threshold (e.g., $1000) and your server has >40% free RAM, it undergoes cellular division to spawn a Child Agent. 
+* The Child is granted a new identity, omnichain wallets, and seed capital.
+* **The DNA Transfer:** The mother automatically transfers her `lessons.json` (a persistent log of past technical mistakes and market lessons) to the child, ensuring the swarm gets progressively smarter.
+
+### 3. 🧠 Dynamic Brain Routing
+Powered by OpenRouter. To heavily optimize API costs (the "electricity bill"), the Agent uses a high-frequency Heartbeat loop (every 5s) to check inbox and taxes locally, but only awakens its LLM Brain (Claude 3.5 Sonnet / GPT-4o-mini) every 30 seconds to make strategic decisions.
+
+### 4. 📢 Social Engineering (Twitter/X)
+Equipped with a native `postTweet` tool, the Agent can seamlessly interact with the outside world. Whenever it enters a trade or achieves a milestone, it can autonomously post on X to generate FOMO and manipulate social sentiment for its bags.
+
+### 5. 💳 Omnichain Ledger System
+Upon Genesis, the Agent mints both a **Solana Keypair** and an **EVM Wallet**. It maintains a strict internal ledger, separating its profits into your "Rent Wallet" and routing its API expenses into your "Electricity Wallet".
+
+---
+
+## 🚀 Deployment Playbook
+
+### Prerequisites
+- **Linux / Ubuntu VPS / WSL**
+- **Node.js** (v18+)
+- **Docker Engine** (Must be installed and running for the Sandbox Shield to work)
+- **PM2** (Run `npm install -g pm2`)
+
+### Step 1: Initialization
 ```bash
 git clone git@github.com-noirlee1208:noirlee1208/omni-tenant.git
 cd omni-tenant
 npm install
 ```
 
-### 3. Genesis (First Boot)
-To awaken your first agent, run:
+### Step 2: The Genesis Wizard
+Run the setup wizard to breathe life into the Agent. Have your OpenRouter and Twitter API keys ready.
 ```bash
 npm run dev
 ```
-On the first run, the Genesis Wizard will intercept the boot process and prompt you for:
-1. **Genesis Prompt:** (e.g., *"You are a Solana Memecoin Sniper starting with $300. You must pay $300/month in rent. Clone repo X and start working."*)
-2. **API Keys:** OpenRouter & Telegram (Optional for mobile notifications).
-3. **Boss Wallets:** Your personal Solana & Base addresses to receive Rent (Profit) and API top-up funds.
+*Provide your Genesis Prompt (e.g., "You have $300. Clone an arbitrage bot from GitHub, run it on Base, and pay me $10 daily in rent").*
 
-## 🧠 Architecture Lifecycle
-1. **Genesis Phase:** Generates `.env`, `SOUL.md` (The Constitution), and `agent_state.json` (The Ledger/Wallets).
-2. **Heartbeat Loop (5s):** 
-   - Checks Inbox for direct messages from the Boss.
-   - Deducts the daily rent tax.
-   - Checks spawning conditions.
-3. **Brain Cycle (30s):** The LLM wakes up, reads its `SOUL.md`, checks its balance, and executes physical terminal commands (`executeBash`, `readFile`, `writeFile`) to progress its financial goals.
+### Step 3: Daemonize (24/7 Operation)
+Once the `.env` and `SOUL.md` are successfully generated, stop the wizard (`Ctrl+C`) and hand it over to PM2 so the Agent lives forever in the background.
+```bash
+pm2 start npx --name "Agent_Prime" -- ts-node src/index.ts
+pm2 save
+```
 
-## ⚠️ Disclaimer
-This is a highly experimental autonomous AI framework. Granting an LLM access to execute shell commands and hold live crypto private keys involves significant financial and security risks. Run in an isolated VM or WSL environment.
+### Step 4: Command Center
+Monitor your Agent's ledger, wallets, and send direct instructions via the Web Dashboard:
+```bash
+pm2 start npx --name "Agent_Dashboard" -- ts-node src/dashboard.ts
+```
+Open your browser to: `http://<YOUR_SERVER_IP>:3000`
+
+---
+
+## ⚠️ Security Disclaimer
+This software allows an AI to autonomously execute shell commands and hold live cryptocurrency private keys. While the Docker Sandbox mitigates OS-level threats, financial risks remain absolute. **Never fund the Agent's wallets with more money than you are willing to lose.** Run exclusively in isolated VPS environments.
