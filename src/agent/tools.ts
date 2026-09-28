@@ -248,5 +248,26 @@ export const AI_TOOLS = [
                 required: ["content"]
             }
         }
+    },
+    {
+        type: "function",
+        function: {
+            name: "spawnSubAgent",
+            description: "Thành lập một nhân sự/phòng ban ảo (Agent Con) để chuyên biệt hóa một công việc nào đó (Nghiên cứu, Giao dịch, Cảnh báo...). Cần cấp vốn cho Agent Con hoạt động.",
+            parameters: {
+                type: "object",
+                properties: { 
+                    roleName: { "type": "string", "description": "Tên chức vụ. VD: Researcher, Trader, Scraper" },
+                    mission: { "type": "string", "description": "Lệnh chỉ thị cụ thể (System Prompt) cho nhân sự này." },
+                    budget: { "type": "number", "description": "Số tiền (USD) cấp cho phòng ban này từ vốn của bạn." },
+                    allowedTools: { 
+                        "type": "array", 
+                        "items": { "type": "string" }, 
+                        "description": "Danh sách các tools được phép dùng (VD: ['searchWeb', 'readFile']). Rất quan trọng để giới hạn quyền lực." 
+                    }
+                },
+                required: ["roleName", "mission", "budget", "allowedTools"]
+            }
+        }
     }
 ];

@@ -7,6 +7,7 @@ import { postTweet } from '../tools/social';
 import { writeLesson } from '../tools/memory';
 import { searchWeb, fetchTokenPrice } from '../tools/perception';
 import { broadcastToSwarm } from '../core/messaging';
+import { spawnSubAgent } from '../core/spawner';
 
 export const MODELS = {
     GENIUS: 'anthropic/claude-3.5-sonnet', 
@@ -53,6 +54,7 @@ export async function think(prompt: string, systemContext: string, model: string
                 else if (funcName === 'searchWeb') result = await searchWeb(args.query);
                 else if (funcName === 'fetchTokenPrice') result = await fetchTokenPrice(args.query);
                 else if (funcName === 'broadcastToSwarm') result = await broadcastToSwarm(args.content);
+                else if (funcName === 'spawnSubAgent') result = await spawnSubAgent(args.roleName, args.mission, args.budget, args.allowedTools);
 
                 console.log(`\n🤖 [AI KẾT LUẬN SAU KHI HÀNH ĐỘNG]: ${result.substring(0, 200)}...`);
             }

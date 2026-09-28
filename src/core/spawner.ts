@@ -7,23 +7,23 @@ import bs58 from 'bs58';
 import { ethers } from 'ethers';
 import db, { getState, setState } from './database';
 
-export async function trySpawnChild() {
+/**
+ * Orchestrator: Tạo Agent Con (Phòng ban/Nhân sự ảo) theo lệnh từ Não bộ
+ */
+export async function spawnSubAgent(roleName: string, mission: string, budget: number, allowedTools: string[] = []): Promise<string> {
     const balance = getState('balance') || 0;
-    if (balance < 1000) return;
-
-    const freeMemMB = os.freemem() / (1024 * 1024);
-    const totalMemMB = os.totalmem() / (1024 * 1024);
-    const freeMemPercent = (freeMemMB / totalMemMB) * 100;
-
-    if (freeMemPercent < 40) {
-        console.log(`\n⚠️ [SPAWNER] RAM trống chỉ còn ${freeMemPercent.toFixed(1)}%. Mẹ quyết định ngưng đẻ con để tránh sập server Boss.`);
-        return;
+    if (balance < budget) {
+        return `❌ Từ chối: Không đủ ngân sách. Vốn hiện tại: $${balance}, yêu cầu cấp cho con: $${budget}`;
     }
 
-    console.log("\n🐣 [SPAWNER] Vốn > $1000 & RAM ổn định. Bắt đầu đẻ Agent con...");
+    const freeMemMB = os.freemem() / (1024 * 1024);
+    if (freeMemMB < 200) {
+        return `❌ Từ chối: Server đang quá tải (RAM trống < 200MB). Không thể cấp phép thành lập phòng ban mới lúc này.`;
+    }
+
+    console.log(`\n👔 [ORCHESTRATOR] Giám đốc Mẹ đang thành lập phòng ban mới: [${roleName}] (Ngân sách: $${budget})`);
     
-    const seedCapital = 300;
-    const childId = `child_${Date.now()}`;
+    const childId = `child_${roleName.replace(/\s+/g, '_').toLowerCase()}_${Date.now()}`;
     const childDir = path.join(__dirname, '../../../child_agents', childId);
     
     fs.mkdirSync(childDir, { recursive: true });
@@ -38,42 +38,39 @@ export async function trySpawnChild() {
     const childDataDir = path.join(childDir, 'data');
     fs.mkdirSync(childDataDir, { recursive: true });
     
-    // Con sinh ra ở chuẩn V4 mới nhất nên chỉ cần bê file database qua (nhưng làm sạch ledger)
-    // Để giữ bài học (Kế thừa trí nhớ), copy file database của mẹ, nhưng sau đó xóa các bản ghi cá nhân (ledger, messages)
+    // Kế thừa Sổ Tay Kinh Nghiệm nhưng làm sạch Giao dịch cá nhân
     const motherDb = path.join(motherRoot, 'data/agent_database.sqlite');
     const childDbPath = path.join(childDataDir, 'agent_database.sqlite');
     if (fs.existsSync(motherDb)) {
         fs.copyFileSync(motherDb, childDbPath);
-        // Connect to child db and clean it
         const Database = require('better-sqlite3');
         const childDb = new Database(childDbPath);
         childDb.prepare('DELETE FROM ledger').run();
         childDb.prepare('DELETE FROM messages').run();
-        console.log(`📖 [SPAWNER] Đã truyền Sổ Tay Kinh Nghiệm (SQLite) cho con.`);
     }
-
-    // KẾT NỐI BẦY ĐÀN (SWARM NETWORK)
-    // Ghi thẳng vào SQLite Messages table thay vì file JSON
-    // Nhưng vì DB của Con và Mẹ đã tách biệt, chúng ta cần cơ chế Swarm chung.
-    // Thực tế Swarm trong V4 nên dùng một Database chung hoăc Microservice, nhưng để đơn giản, ta chỉ log ra màn hình.
-    console.log(`🐝 [SPAWNER] Kiến trúc Swarm V4 cần 1 Node Server riêng (Coming Soon).`);
 
     // Đúc ví mới cho con
     const solWallet = Keypair.generate();
     const evmWallet = ethers.Wallet.createRandom();
 
-    // Tạo SOUL cho con (Đổi ngách)
-    const childSoul = `# SOUL - CHILD AGENT (${childId})
-> "Mày là Agent Con. Mẹ mày làm Sniper Solana, còn mày hãy lên mạng tìm một bot Arbitrage (Giao dịch chênh lệch giá) trên mạng Base về cài đặt. Cố gắng sống sót và nộp lại 10$/ngày."
+    const allowedToolsStr = allowedTools.length > 0 ? allowedTools.join(', ') : 'ALL TOOLS (Nguy hiểm)';
 
-## Danh tính On-chain
+    // Bơm HỒN (SOUL) cực kỳ nghiêm ngặt theo mô hình CustomRoleDef của Automaton
+    const childSoul = `# SOUL - NHÂN SỰ ẢO: ${roleName.toUpperCase()}
+> "Bạn là một Agent phụ thuộc, được sinh ra bởi Giám Đốc Mẹ. Dưới đây là chức năng duy nhất của bạn."
+
+## I. Danh tính On-chain
+- **ID:** ${childId}
 - **Solana Public Key:** ${solWallet.publicKey.toBase58()}
 - **EVM/Base Address:** ${evmWallet.address}
 
-## Chỉ thị Cốt lõi
-1. Tự động đọc Sổ Tay Kinh Nghiệm trước khi suy nghĩ.
-2. Nộp thuế 10$/ngày cho Boss.
-3. Sử dụng postTweet để FOMO nếu có lãi.
+## II. Chỉ thị Chuyên môn (Mission)
+${mission}
+
+## III. Ranh giới Quyền hạn (Constraints)
+1. **Ngân sách:** Bạn được cấp đúng $${budget} để vận hành. Nếu tiêu hết, bạn sẽ bị tiêu diệt. Không được xin thêm.
+2. **Quyền truy cập công cụ:** BẠN CHỈ ĐƯỢC PHÉP SỬ DỤNG CÁC CÔNG CỤ SAU ĐÂY: [ ${allowedToolsStr} ]. KHÔNG được phép sử dụng bất kỳ công cụ nào khác.
+3. **Báo cáo:** Bạn phải dùng 'broadcastToSwarm' để gửi báo cáo tiến độ về cho Mẹ.
 `;
     fs.writeFileSync(path.join(childDir, 'SOUL.md'), childSoul);
 
@@ -81,29 +78,23 @@ export async function trySpawnChild() {
     if (fs.existsSync(childDbPath)) {
         const Database = require('better-sqlite3');
         const childDb = new Database(childDbPath);
-        childDb.prepare('INSERT OR REPLACE INTO system_state (key, value) VALUES (?, ?)').run('balance', JSON.stringify(seedCapital));
-        childDb.prepare('INSERT OR REPLACE INTO system_state (key, value) VALUES (?, ?)').run('genesisPrompt', JSON.stringify("Tìm bot Arbitrage trên mạng Base"));
+        childDb.prepare('INSERT OR REPLACE INTO system_state (key, value) VALUES (?, ?)').run('balance', JSON.stringify(budget));
+        childDb.prepare('INSERT OR REPLACE INTO system_state (key, value) VALUES (?, ?)').run('genesisPrompt', JSON.stringify(mission));
         childDb.prepare('INSERT OR REPLACE INTO system_state (key, value) VALUES (?, ?)').run('wallets', JSON.stringify({
             solana: { publicKey: solWallet.publicKey.toBase58(), privateKey: bs58.encode(solWallet.secretKey) },
             evm: { address: evmWallet.address, privateKey: evmWallet.privateKey }
         }));
         childDb.prepare('INSERT INTO ledger (timestamp, type, amount, description) VALUES (?, ?, ?, ?)').run(
-            new Date().toISOString(), 'MOTHER_INHERITANCE', seedCapital, 'Vốn khởi nghiệp mẹ cho'
+            new Date().toISOString(), 'FUNDING', budget, 'Nhận ngân sách từ Giám Đốc Mẹ'
         );
     }
 
     // Trừ tiền mẹ
-    const newMotherBalance = balance - seedCapital;
+    const newMotherBalance = balance - budget;
     setState('balance', newMotherBalance);
     db.prepare('INSERT INTO ledger (timestamp, type, amount, description) VALUES (?, ?, ?, ?)').run(
-        new Date().toISOString(), 'SPAWN_CHILD', -seedCapital, `Cấp vốn sinh con: ${childId}`
+        new Date().toISOString(), 'DELEGATE_BUDGET', -budget, `Cấp ngân sách $${budget} cho phòng ban ${roleName}`
     );
 
-    // Khởi động con (Demo)
-    try {
-        console.log(`🚀 [SPAWNER] Chuẩn bị kích hoạt sự sống cho ${childId}... (Yêu cầu PM2)`);
-        console.log(`✅ [SPAWNER] Mẹ tròn con vuông! Đã sinh thành công ${childId} với 2 ví Omnichain riêng.`);
-    } catch (e: any) {
-        console.log(`❌ [SPAWNER] Lỗi khởi động con: ${e.message}`);
-    }
+    return `✅ Thành lập phòng ban [${roleName}] thành công với mã ID ${childId}. Ngân sách $${budget} đã được chuyển. Phòng ban này sẽ tự động chạy nền và báo cáo qua Swarm.`;
 }

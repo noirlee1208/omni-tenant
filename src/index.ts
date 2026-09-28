@@ -1,7 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
-import { trySpawnChild } from './core/spawner';
 import { runGenesisWizard } from './setup/genesis';
 import { think, getSoulContext, MODELS } from './agent/brain';
 import { getTopLessons } from './tools/memory';
@@ -78,9 +77,6 @@ async function boot() {
         
         processTax();
         
-        // Đẻ con (Đã chuyển sang dùng SQLite)
-        await trySpawnChild();
-        
         // --- BỘ NÃO TỰ TRỊ (AUTONOMOUS THINKING) ---
         if (cycle % 6 === 0) {
             console.log("\n⚡ [AWAKE] Agent đang vận dụng Não bộ để xử lý công việc...");
@@ -124,8 +120,9 @@ ${inboxContext}
 1. ĐÁNH GIÁ: Phương pháp hiện tại của bạn có sinh lời không?
 2. ĐỊNH HÌNH KỸ NĂNG: Nếu chưa có quy trình làm việc chuẩn, hãy tạo ra nó.
 3. TÌM KIẾM CÔNG CỤ: CHỈ dùng 'executeBash' tải công cụ từ bên ngoài NẾU nó khớp với quy trình.
-4. GHI NHỚ VÀ CHIA SẺ: Nếu có lỗi, dùng 'writeLesson'. Nếu có chiến thuật hay, dùng 'broadcastToSwarm'.
-5. HÀNH ĐỘNG: Nếu có lệnh Hộp Thư, ưu tiên thực hiện. Nếu không, hãy làm hành động logic nhất.`;
+4. ỦY QUYỀN (ORCHESTRATION): Nếu một công việc quá phức tạp, rủi ro cao, hoặc nằm ngoài chuyên môn, HÃY DÙNG CÔNG CỤ 'spawnSubAgent' để đẻ ra một Agent con (Phòng ban mới) và ném việc cho nó. Đừng tự làm tất cả!
+5. GHI NHỚ VÀ CHIA SẺ: Nếu có lỗi, dùng 'writeLesson'. Nếu có chiến thuật hay, dùng 'broadcastToSwarm'.
+6. HÀNH ĐỘNG: Nếu có lệnh Hộp Thư, ưu tiên thực hiện. Nếu không, hãy làm hành động logic nhất.`;
             
             // ĐỨNG CHỜ LLM XỬ LÝ XONG (Overlap Guard)
             await think(prompt, systemContext, MODELS.GENIUS);
