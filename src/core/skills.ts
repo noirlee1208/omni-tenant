@@ -32,29 +32,39 @@ export function loadActiveSkills(): string {
 }
 
 /**
- * Tool: Cài đặt Kỹ năng từ một Git Repository
+ * Tool: Cài đặt Kỹ năng từ mọi nguồn (Git Repo hoặc Raw URL)
  */
-export async function installSkill(repoUrl: string): Promise<string> {
+export async function installSkill(url: string): Promise<string> {
     try {
-        const repoName = repoUrl.split('/').pop()?.replace('.git', '') || `skill_${Date.now()}`;
+        const repoName = url.split('/').pop()?.replace('.git', '').replace('.md', '').replace(/[^a-zA-Z0-9_-]/g, '_') || `skill_${Date.now()}`;
         const targetDir = path.join(skillsDir, repoName);
         
         if (fs.existsSync(targetDir)) {
             return `Kỹ năng [${repoName}] đã tồn tại trong hệ thống.`;
         }
 
-        execSync(`git clone ${repoUrl} "${targetDir}"`, { stdio: 'ignore' });
-        
-        // Kiểm tra xem repo có file SKILL.md không
-        if (!fs.existsSync(path.join(targetDir, 'SKILL.md'))) {
-            // Tự động tạo file SKILL.md mẫu nếu không có
-            fs.writeFileSync(path.join(targetDir, 'SKILL.md'), `# Kỹ năng: ${repoName}\n\nKỹ năng này chưa có Hướng dẫn cụ thể. Bạn hãy đọc các script trong thư mục này để hiểu cách dùng.`);
+        // PHÂN LOẠI 1: Nếu là Git Repository
+        if (url.endsWith('.git') || (url.includes('github.com') && !url.includes('/raw/'))) {
+            execSync(`git clone ${url} "${targetDir}"`, { stdio: 'ignore' });
+            if (!fs.existsSync(path.join(targetDir, 'SKILL.md'))) {
+                fs.writeFileSync(path.join(targetDir, 'SKILL.md'), `# Kỹ năng: ${repoName}\n\nKỹ năng này chưa có Hướng dẫn cụ thể. Bạn hãy đọc các script trong thư mục này để hiểu cách dùng.`);
+            }
+            console.log(`\n📚 [SKILL REGISTRY] Đã Clone Git Kỹ năng: ${repoName}`);
+            return `✅ Đã clone Git Repo [${repoName}] thành công. Kỹ năng đã sẵn sàng.`;
+        } 
+        // PHÂN LOẠI 2: Nếu là Raw URL (Gist, Pastebin, Raw Github...)
+        else {
+            const response = await fetch(url);
+            if (!response.ok) throw new Error(`HTTP Error: ${response.status}`);
+            const textContent = await response.text();
+            
+            fs.mkdirSync(targetDir, { recursive: true });
+            fs.writeFileSync(path.join(targetDir, 'SKILL.md'), textContent);
+            console.log(`\n📚 [SKILL REGISTRY] Đã tải Raw Kỹ năng từ URL: ${repoName}`);
+            return `✅ Đã tải file Kỹ năng từ link trực tiếp thành công và lưu với tên [${repoName}].`;
         }
-
-        console.log(`\n📚 [SKILL REGISTRY] Đã tải thành công Kỹ năng: ${repoName}`);
-        return `✅ Đã cài đặt Kỹ năng [${repoName}] thành công từ ${repoUrl}. Hệ thống sẽ nạp nó vào não bộ ở chu kỳ sau.`;
     } catch (e: any) {
-        return `❌ Lỗi khi cài Kỹ năng: ${e.message}`;
+        return `❌ Lỗi khi tải Kỹ năng: ${e.message}`;
     }
 }
 

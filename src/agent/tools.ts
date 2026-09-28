@@ -274,11 +274,11 @@ export const AI_TOOLS = [
         type: "function",
         function: {
             name: "installSkill",
-            description: "Tải và cài đặt một Kỹ năng (Skill) từ một Github Repository URL.",
+            description: "Tải và cài đặt Kỹ năng từ mọi nguồn trên Internet. Hỗ trợ Git Clone (Github, Gitlab) VÀ tải file text (.md, .txt) từ link trực tiếp (Pastebin, Gist...).",
             parameters: {
                 type: "object",
                 properties: { 
-                    repoUrl: { "type": "string", "description": "URL Github của Kỹ năng (VD: https://github.com/user/repo.git)" }
+                    repoUrl: { "type": "string", "description": "URL của Kỹ năng. Có thể là link Git (.git) hoặc link HTTP/HTTPS trỏ tới file text thô." }
                 },
                 required: ["repoUrl"]
             }
