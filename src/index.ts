@@ -73,13 +73,32 @@ async function boot() {
     async function heartbeat() {
         cycle++;
         const balance = getState('balance') || 0;
-        console.log(`\n[Heartbeat] Cycle ${cycle} - Checking system... (Balance: $${balance.toFixed(2)})`);
+        
+        // --- AUTO SURVIVAL MODE ROUTING ---
+        let currentMode = 'high';
+        let currentModel = MODELS.GENIUS;
+        let sleepMs = 5000;
+        let thinkFrequency = 6; // Đập 6 nhịp (30s) suy nghĩ 1 lần
+
+        if (balance < 10) {
+            currentMode = 'critical';
+            currentModel = MODELS.READER; // Rất rẻ
+            sleepMs = 15000;
+            thinkFrequency = 10;
+        } else if (balance < 100) {
+            currentMode = 'low_compute';
+            currentModel = MODELS.WORKER; // Rẻ vừa
+            sleepMs = 10000;
+            thinkFrequency = 8;
+        }
+
+        console.log(`\n[Heartbeat] Cycle ${cycle} - Balance: $${balance.toFixed(2)} | Mode: ${currentMode.toUpperCase()} | Model: ${currentModel.split('/')[1]}`);
         
         processTax();
         
         // --- BỘ NÃO TỰ TRỊ (AUTONOMOUS THINKING) ---
-        if (cycle % 6 === 0) {
-            console.log("\n⚡ [AWAKE] Agent đang vận dụng Não bộ để xử lý công việc...");
+        if (cycle % thinkFrequency === 0) {
+            console.log(`\n⚡ [AWAKE] Agent đang vận dụng Não bộ (${currentMode.toUpperCase()} MODE)...`);
             
             const soul = getSoulContext();
             const memory = getTopLessons(); 
@@ -125,11 +144,11 @@ ${inboxContext}
 6. HÀNH ĐỘNG: Nếu có lệnh Hộp Thư, ưu tiên thực hiện. Nếu không, hãy làm hành động logic nhất.`;
             
             // ĐỨNG CHỜ LLM XỬ LÝ XONG (Overlap Guard)
-            await think(prompt, systemContext, MODELS.GENIUS);
+            await think(prompt, systemContext, currentModel);
         }
         
         // Đặt lịch cho nhịp đập tiếp theo (chỉ chạy sau khi nhịp hiện tại đã xong xuôi)
-        setTimeout(heartbeat, 5000);
+        setTimeout(heartbeat, sleepMs);
     }
 
     // Kích hoạt nhịp đập đầu tiên
