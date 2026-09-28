@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { startTelegramDaemon } from "./social/telegram.js";
 /**
  * Conway Automaton Runtime
  *
@@ -367,6 +368,9 @@ async function run(): Promise<void> {
   } catch (err: any) {
     logger.warn(`[${new Date().toISOString()}] Bootstrap topup skipped: ${err.message}`);
   }
+
+  // Start Telegram Bot
+  startTelegramDaemon(process.env.TELEGRAM_BOT_TOKEN || '', db.raw);
 
   // Start heartbeat daemon (Phase 1.1: DurableScheduler)
   const heartbeat = createHeartbeatDaemon({
