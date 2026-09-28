@@ -1,0 +1,26 @@
+{
+  "name": "crypto-tenant-agent",
+  "version": "1.0.0",
+  "description": "Autonomous trading agent with survival and tax mechanics",
+  "main": "dist/index.js",
+  "scripts": {
+    "start": "ts-node src/index.ts",
+    "build": "tsc",
+    "dev": "ts-node src/index.ts"
+  },
+  "dependencies": {
+    "@solana/web3.js": "^1.99.0",
+    "@types/express": "^5.0.6",
+    "bs58": "^6.0.0",
+    "ccxt": "^4.4.19",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.17.0",
+    "express": "^5.2.1",
+    "openai": "^7.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.5.0",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.5.4"
+  }
+}

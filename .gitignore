@@ -1,0 +1,14 @@
+# TÀI LIỆU MẬT (TUYỆT ĐỐI KHÔNG PUSH)
+.env
+data/
+child_agents/
+workspace/
+
+# BỎ QUA THƯ VIỆN & BUILD
+node_modules/
+dist/
+*.log
+
+# CẤU HÌNH HỆ ĐIỀU HÀNH
+.DS_Store
+Thumbs.db
