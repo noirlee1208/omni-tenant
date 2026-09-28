@@ -40,8 +40,8 @@ export async function think(prompt: string, systemContext: string, model: string
 
         if (msg.tool_calls && msg.tool_calls.length > 0) {
             for (const toolCall of msg.tool_calls) {
-                const funcName = toolCall.function.name;
-                const args = JSON.parse(toolCall.function.arguments);
+                const funcName = (toolCall as any).function.name;
+                const args = JSON.parse((toolCall as any).function.arguments);
                 
                 let result = '';
                 if (funcName === 'executeBash') result = await executeBash(args.command);

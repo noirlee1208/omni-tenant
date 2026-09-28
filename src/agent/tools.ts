@@ -109,20 +109,11 @@ export async function editCode(filePath: string, targetString: string, replaceme
         const newContent = content.replace(targetString, replacement);
         fs.writeFileSync(absolutePath, newContent);
         
-        // 3. LƯU VẾT VÀO AUDIT LOG
-        const auditLogPath = path.resolve(__dirname, '../../data/audit-log.json');
-        let auditLog: any[] = [];
-        if (fs.existsSync(auditLogPath)) {
-            auditLog = JSON.parse(fs.readFileSync(auditLogPath, 'utf-8'));
-        }
-        auditLog.push({
-            timestamp: new Date().toISOString(),
-            file: filePath,
-            action: "EDIT_CODE",
-            replaced: targetString,
-            newCode: replacement
-        });
-        fs.writeFileSync(auditLogPath, JSON.stringify(auditLog, null, 2));
+        // 3. LƯU VẾT VÀO CSDL AUDIT LOG (SQLite)
+        const { default: db } = require('../core/database');
+        db.prepare('INSERT INTO audit_logs (timestamp, file, action, replaced, newCode) VALUES (?, ?, ?, ?, ?)').run(
+            new Date().toISOString(), filePath, "EDIT_CODE", targetString, replacement
+        );
         
         return `✅ Đã thay thế mã nguồn thành công. \n🛡️ Snapshot dự phòng đã lưu tại: ${backupPath}\n(Nếu mã nguồn mới bị lỗi, hãy dùng 'executeBash' để đổi tên file backup này phục hồi lại).`;
     } catch (e: any) {

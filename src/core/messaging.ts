@@ -1,5 +1,5 @@
-import * as fs from 'fs';
 import * as path from 'path';
+import db from './database';
 
 export type MessageType = 
     | 'customer_request'  
@@ -18,64 +18,43 @@ export interface InboxMessage {
     isRead: boolean;
 }
 
-const inboxPath = path.join(__dirname, '../../data/inbox.json');
-
-// Đường dẫn Swarm Channel (Con sẽ dùng chung file của Mẹ thông qua biến môi trường)
-const swarmPath = process.env.SWARM_PATH || path.join(__dirname, '../../data/swarm.json');
 const agentId = process.env.AGENT_ID || 'Agent_Prime';
 
 // --- XỬ LÝ HỘP THƯ LỆNH CỦA BOSS (INBOX) ---
 export function getInbox(): InboxMessage[] {
-    if (!fs.existsSync(inboxPath)) return [];
-    return JSON.parse(fs.readFileSync(inboxPath, 'utf-8'));
+    // Chỉ lấy tin nhắn gửi đích danh hoặc tin nhắn của hệ thống
+    const stmt = db.prepare("SELECT * FROM messages WHERE type != 'knowledge_share' ORDER BY timestamp ASC");
+    return stmt.all() as InboxMessage[];
 }
 
 export function writeInbox(msg: Omit<InboxMessage, 'id' | 'timestamp' | 'isRead'>) {
-    const inbox = getInbox();
-    const newMessage: InboxMessage = {
-        ...msg,
-        id: `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-        timestamp: new Date().toISOString(),
-        isRead: false
-    };
-    inbox.push(newMessage);
-    fs.mkdirSync(path.dirname(inboxPath), { recursive: true });
-    fs.writeFileSync(inboxPath, JSON.stringify(inbox, null, 2));
-    console.log(`\n📬 [INBOX] Đã nhận tin nhắn mới từ ${msg.sender}.`);
+    const newId = `msg_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const timestamp = new Date().toISOString();
+    
+    db.prepare("INSERT INTO messages (id, type, sender, content, timestamp, isRead) VALUES (?, ?, ?, ?, ?, 0)")
+      .run(newId, msg.type, msg.sender, msg.content, timestamp);
+      
+    console.log(`\n📬 [INBOX] Đã nhận tin nhắn mới từ ${msg.sender}. (Lưu qua SQLite)`);
 }
 
 export function markAsRead(messageId: string) {
-    const inbox = getInbox();
-    const index = inbox.findIndex(m => m.id === messageId);
-    if (index !== -1) {
-        inbox[index].isRead = true;
-        fs.writeFileSync(inboxPath, JSON.stringify(inbox, null, 2));
-    }
+    db.prepare("UPDATE messages SET isRead = 1 WHERE id = ?").run(messageId);
 }
 
 // --- XỬ LÝ GIAO TIẾP BẦY ĐÀN (SWARM) ---
 export function getSwarmMessages(): InboxMessage[] {
-    if (!fs.existsSync(swarmPath)) return [];
-    return JSON.parse(fs.readFileSync(swarmPath, 'utf-8'));
+    // Chỉ lấy tin nhắn bầy đàn (knowledge_share) mới nhất
+    const stmt = db.prepare("SELECT * FROM messages WHERE type = 'knowledge_share' ORDER BY timestamp DESC LIMIT 10");
+    return stmt.all() as InboxMessage[];
 }
 
 export function broadcastToSwarm(content: string): string {
-    const swarm = getSwarmMessages();
-    const newMessage: InboxMessage = {
-        id: `swarm_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
-        type: 'knowledge_share',
-        sender: agentId,
-        content: content,
-        timestamp: new Date().toISOString(),
-        isRead: false
-    };
-    swarm.push(newMessage);
+    const newId = `swarm_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
+    const timestamp = new Date().toISOString();
     
-    // Giữ Swarm channel nhẹ gọn (chỉ lưu 50 tin nhắn gần nhất)
-    if (swarm.length > 50) swarm.shift();
-    
-    fs.mkdirSync(path.dirname(swarmPath), { recursive: true });
-    fs.writeFileSync(swarmPath, JSON.stringify(swarm, null, 2));
-    console.log(`\n🐝 [SWARM] ${agentId} vừa truyền âm nhập mật cho cả bầy đàn!`);
+    db.prepare("INSERT INTO messages (id, type, sender, content, timestamp, isRead) VALUES (?, ?, ?, ?, ?, 0)")
+      .run(newId, 'knowledge_share', agentId, content, timestamp);
+      
+    console.log(`\n🐝 [SWARM] ${agentId} vừa truyền âm nhập mật cho cả bầy đàn! (Lưu qua SQLite)`);
     return `✅ Đã chia sẻ thông tin cho bầy đàn thành công.`;
 }

@@ -5,71 +5,81 @@ import { trySpawnChild } from './core/spawner';
 import { runGenesisWizard } from './setup/genesis';
 import { think, getSoulContext, MODELS } from './agent/brain';
 import { getTopLessons } from './tools/memory';
-import { getInbox, markAsRead, InboxMessage } from './core/messaging';
+import { getInbox, markAsRead, getSwarmMessages } from './core/messaging';
+import db, { migrateLegacyJson, getState, setState } from './core/database';
 
 dotenv.config();
 
 const dbDir = path.join(__dirname, '../data');
 if (!fs.existsSync(dbDir)) fs.mkdirSync(dbDir);
-const dbPath = path.join(dbDir, 'agent_state.json');
+const jsonDbPath = path.join(dbDir, 'agent_state.json'); // Legacy
 const soulPath = path.join(__dirname, '../SOUL.md');
 
 async function boot() {
     console.log("==================================================");
-    console.log("🤖 Sovereign Agent Framework: Booting up...");
+    console.log("🤖 Sovereign Agent Framework: Booting up V4...");
     console.log("==================================================");
 
-    if (!fs.existsSync(soulPath) || !fs.existsSync(dbPath)) {
-        await runGenesisWizard(dbPath, soulPath);
+    // Chuyển đổi dữ liệu cũ nếu còn
+    migrateLegacyJson();
+
+    // Nếu chưa chạy Genesis (DB SQLite chưa có genesisPrompt)
+    let genesisPrompt = getState('genesisPrompt');
+    if (!fs.existsSync(soulPath) || !genesisPrompt) {
+        await runGenesisWizard(jsonDbPath, soulPath);
+        // Sau khi chạy wizard, migrate lần nữa để bê JSON sang DB
+        migrateLegacyJson();
+        genesisPrompt = getState('genesisPrompt');
     } else {
         console.log("✅ Identity loaded: SOUL.md found.");
-        console.log("✅ State Database loaded.");
+        console.log("✅ Database loaded: SQLite connected.");
     }
 
-    let state = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
     const TAX_INTERVAL_MS = 24 * 60 * 60 * 1000; 
 
     function processTax() {
-        state = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-        const DAILY_TAX = state.config.dailyTax || 10;
+        const balance = getState('balance') || 0;
+        const config = getState('config') || {};
+        const DAILY_TAX = config.dailyTax || 10;
 
         const now = new Date();
-        const lastTaxDate = new Date(state.config.lastTaxTimestamp || now.toISOString());
+        const lastTaxDate = new Date(config.lastTaxTimestamp || now.toISOString());
         const timeDiff = now.getTime() - lastTaxDate.getTime();
 
         if (timeDiff >= TAX_INTERVAL_MS) {
             console.log(`\n💸 [TAX EVENT] Đến hạn nộp thuế. Thu $${DAILY_TAX} từ tài khoản...`);
-            state.balance -= DAILY_TAX; 
+            const newBalance = balance - DAILY_TAX;
+            setState('balance', newBalance); 
             
-            state.ledger.push({
-                id: state.ledger.length + 1,
-                timestamp: now.toISOString(),
-                type: 'TAX',
-                amount: -DAILY_TAX,
-                description: `Daily Rent Tax (Mức mới: $${DAILY_TAX})`
-            });
+            db.prepare('INSERT INTO ledger (timestamp, type, amount, description) VALUES (?, ?, ?, ?)').run(
+                now.toISOString(), 'TAX', -DAILY_TAX, `Daily Rent Tax (Mức mới: $${DAILY_TAX})`
+            );
             
-            state.config.lastTaxTimestamp = now.toISOString();
-            fs.writeFileSync(dbPath, JSON.stringify(state, null, 2));
+            config.lastTaxTimestamp = now.toISOString();
+            setState('config', config);
             
-            console.log(`📉 Đã nộp thuế. Vốn khả dụng còn: $${state.balance.toFixed(2)}`);
+            console.log(`📉 Đã nộp thuế. Vốn khả dụng còn: $${newBalance.toFixed(2)}`);
             
-            if (state.balance <= 0) {
+            if (newBalance <= 0) {
                 console.error("💀 [DEAD] Số dư $0. Phá sản. Tiến trình sẽ bị tiêu diệt!");
                 process.exit(1); 
             }
         }
     }
 
-    console.log("⏳ Starting Heartbeat Daemon...");
+    console.log("⏳ Starting Durable Scheduler (Heartbeat Daemon)...");
     let cycle = 0;
 
-    setInterval(async () => {
+    // Thay thế setInterval bằng Đệ quy setTimeout (Tránh Overlap Memory Leak)
+    async function heartbeat() {
         cycle++;
-        console.log(`\n[Heartbeat] Cycle ${cycle} - Checking system... (Balance: $${state.balance.toFixed(2)})`);
+        const balance = getState('balance') || 0;
+        console.log(`\n[Heartbeat] Cycle ${cycle} - Checking system... (Balance: $${balance.toFixed(2)})`);
         
         processTax();
-        await trySpawnChild(state, dbPath);
+        
+        // Đẻ con (Đã chuyển sang dùng SQLite)
+        await trySpawnChild();
         
         // --- BỘ NÃO TỰ TRỊ (AUTONOMOUS THINKING) ---
         if (cycle % 6 === 0) {
@@ -79,10 +89,9 @@ async function boot() {
             const memory = getTopLessons(); 
             const systemContext = `Bạn là một Thực thể AI tự trị hoàn toàn. Dưới đây là Hiến pháp (SOUL) của bạn:\n${soul}\n${memory}`;
             
-            // Đọc Hộp thư lệnh (Colony Messaging)
+            // Đọc Hộp thư lệnh
             const unreadMessages = getInbox().filter(m => !m.isRead);
             let inboxContext = '';
-            
             if (unreadMessages.length > 0) {
                 inboxContext = `\n🚨 MỆNH LỆNH TỐI CAO TỪ HỘP THƯ:\n`;
                 unreadMessages.forEach(msg => {
@@ -92,21 +101,21 @@ async function boot() {
                 inboxContext += `=> LƯU Ý: Bạn PHẢI ưu tiên thực thi các lệnh từ Hộp thư này trước khi làm các việc khác!\n`;
             }
 
-            // Đọc tin tức nội bộ từ Bầy đàn (Swarm)
-            const { getSwarmMessages } = require('./core/messaging');
-            const swarmLogs = getSwarmMessages().slice(-3); // Lấy 3 tin mới nhất
+            // Đọc tin tức Bầy đàn
+            const swarmLogs = getSwarmMessages().slice(0, 3);
             let swarmContext = '';
             if (swarmLogs.length > 0) {
-                swarmContext = `\n🐝 THÔNG TIN TỪ BẦY ĐÀN (SWARM):\n` + swarmLogs.map((s: any) => `- ${s.sender}: ${s.content}`).join('\n');
+                swarmContext = `\n🐝 THÔNG TIN TỪ BẦY ĐÀN (SWARM):\n` + swarmLogs.map(s => `- ${s.sender}: ${s.content}`).join('\n');
             }
 
-            // Trích xuất 5 giao dịch tài chính gần nhất
-            const recentLedger = state.ledger.slice(-5).map((l: any) => 
+            // Trích xuất 5 giao dịch gần nhất từ SQLite
+            const recentLedgerRows = db.prepare('SELECT * FROM ledger ORDER BY timestamp DESC LIMIT 5').all() as any[];
+            const recentLedger = recentLedgerRows.map(l => 
                 `- [${new Date(l.timestamp).toLocaleTimeString()}] ${l.type}: ${l.amount > 0 ? '+' : ''}${l.amount}$ (${l.description})`
             ).join('\n');
 
             const prompt = `📊 BÁO CÁO TRẠNG THÁI:
-- Vốn hiện tại: $${state.balance.toFixed(2)}
+- Vốn hiện tại: $${balance.toFixed(2)}
 - Lịch sử dòng tiền (5 giao dịch gần nhất):
 ${recentLedger || 'Chưa có giao dịch nào.'}
 ${swarmContext}
@@ -115,13 +124,19 @@ ${inboxContext}
 1. ĐÁNH GIÁ: Phương pháp hiện tại của bạn có sinh lời không?
 2. ĐỊNH HÌNH KỸ NĂNG: Nếu chưa có quy trình làm việc chuẩn, hãy tạo ra nó.
 3. TÌM KIẾM CÔNG CỤ: CHỈ dùng 'executeBash' tải công cụ từ bên ngoài NẾU nó khớp với quy trình.
-4. GHI NHỚ VÀ CHIA SẺ: Nếu có lỗi, dùng 'writeLesson'. Nếu có chiến thuật hay, hãy dùng 'broadcastToSwarm' để báo cho đồng loại.
-5. HÀNH ĐỘNG: Nếu có lệnh Hộp Thư, ưu tiên thực hiện. Nếu không, hãy làm hành động logic nhất theo kế hoạch.`;
+4. GHI NHỚ VÀ CHIA SẺ: Nếu có lỗi, dùng 'writeLesson'. Nếu có chiến thuật hay, dùng 'broadcastToSwarm'.
+5. HÀNH ĐỘNG: Nếu có lệnh Hộp Thư, ưu tiên thực hiện. Nếu không, hãy làm hành động logic nhất.`;
             
+            // ĐỨNG CHỜ LLM XỬ LÝ XONG (Overlap Guard)
             await think(prompt, systemContext, MODELS.GENIUS);
         }
         
-    }, 5000);
+        // Đặt lịch cho nhịp đập tiếp theo (chỉ chạy sau khi nhịp hiện tại đã xong xuôi)
+        setTimeout(heartbeat, 5000);
+    }
+
+    // Kích hoạt nhịp đập đầu tiên
+    heartbeat();
 }
 
 boot();

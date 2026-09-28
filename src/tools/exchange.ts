@@ -24,8 +24,8 @@ export async function getBalance() {
         
         const balance = await exchange.fetchBalance();
         return {
-            USDT: balance.total['USDT'] || 0,
-            BTC: balance.total['BTC'] || 0
+            USDT: (balance.total as any)['USDT'] || 0,
+            BTC: (balance.total as any)['BTC'] || 0
         };
     } catch (error: any) {
         console.error("❌ [Lỗi Exchange] Không thể lấy số dư:", error.message);

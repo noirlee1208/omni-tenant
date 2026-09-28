@@ -1,118 +1,88 @@
 import express from 'express';
-import * as fs from 'fs';
 import * as path from 'path';
+import * as fs from 'fs';
 
 const app = express();
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
 const PORT = process.env.PORT || 8999;
-const dbPath = path.join(__dirname, '../data/agent_state.json');
-const inboxPath = path.join(__dirname, '../data/inbox.json');
 
-// Khởi tạo Inbox nếu chưa có
-if (!fs.existsSync(inboxPath)) {
-    fs.writeFileSync(inboxPath, JSON.stringify([]));
-}
-
-// Giao diện Web HTML cơ bản
-app.get('/', (req, res) => {
-    let state: any = { balance: 0, config: { monthlyRent: 300 }, genesisPrompt: '' };
-    let logs: any[] = [];
-    if (fs.existsSync(dbPath)) {
-        state = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-        logs = state.ledger ? state.ledger.slice(-10).reverse() : [];
-    }
-
-    let inbox = JSON.parse(fs.readFileSync(inboxPath, 'utf-8'));
-
-    const html = `
-    <!DOCTYPE html>
-    <html lang="vi">
-    <head>
-        <meta charset="UTF-8">
-        <title>Sovereign Command Center</title>
-        <style>
-            body { font-family: monospace; background: #1e1e1e; color: #00ff00; padding: 20px; }
-            .card { border: 1px solid #00ff00; padding: 15px; margin-bottom: 20px; background: #000; }
-            input, button { background: #333; color: #00ff00; border: 1px solid #00ff00; padding: 5px; }
-            button { cursor: pointer; font-weight: bold; }
-            button:hover { background: #00ff00; color: #000; }
-            .log-entry { margin: 5px 0; border-bottom: 1px dashed #333; padding-bottom: 5px; }
-            .danger { color: #ff4444; }
-        </style>
-    </head>
-    <body>
-        <h2>👁️ TỔNG LÃNH SỰ QUÁN (Command Center)</h2>
+app.get('/api/status', (req, res) => {
+    try {
+        const { default: db, getState } = require('./core/database');
         
-        <div class="card">
-            <h3>🤖 Agent Prime (Mother)</h3>
-            <p><strong>Vốn sổ cái nội bộ:</strong> $${state.balance.toFixed(2)}</p>
-            <p><strong>Mức Thuế (Tiền nhà):</strong> $${state.config.monthlyRent}/tháng</p>
-            <p><strong>Lệnh Khởi Nguyên:</strong> <i>${state.genesisPrompt || 'N/A'}</i></p>
-            ${state.wallets?.solana ? `<p style="color: yellow;"><strong>🔑 Ví Solana:</strong> ${state.wallets.solana.publicKey}</p>` : ''}
-            ${state.wallets?.evm ? `<p style="color: cyan;"><strong>🔑 Ví EVM/Base:</strong> ${state.wallets.evm.address}</p>` : ''}
-        </div>
+        const balance = getState('balance') || 0;
+        const config = getState('config') || {};
+        const wallets = getState('wallets') || {};
+        const genesisPrompt = getState('genesisPrompt') || 'Chưa khởi tạo';
 
-        <div class="card">
-            <h3>⚙️ ĐIỀU CHỈNH TIỀN NHÀ (TAX UPDATE)</h3>
-            <form action="/update-rent" method="POST">
-                <label>Nhập mức tiền nhà mới ($/tháng): </label>
-                <input type="number" name="newRent" value="${state.config.monthlyRent}" required>
-                <button type="submit">CẬP NHẬT</button>
-            </form>
-        </div>
+        const ledger = db.prepare('SELECT * FROM ledger ORDER BY timestamp DESC LIMIT 50').all();
 
-        <div class="card">
-            <h3>✉️ GỬI CHỈ THỊ (BROADCAST MESSAGE)</h3>
-            <form action="/send-message" method="POST">
-                <input type="text" name="message" placeholder="VD: Bắt đầu giao dịch cẩn thận hơn..." style="width: 70%;" required>
-                <button type="submit">GỬI CHO TẤT CẢ AGENT</button>
-            </form>
-            <div style="margin-top: 10px; color: #888;">
-                <b>Lịch sử chỉ thị:</b><br>
-                ${inbox.map((msg: any) => `- [${msg.time}] Boss: ${msg.text}`).join('<br>') || 'Chưa có tin nhắn nào.'}
-            </div>
-        </div>
+        let solAddress = 'Chưa tạo';
+        let evmAddress = 'Chưa tạo';
+        if (wallets.solana) {
+            const Keypair = require('@solana/web3.js').Keypair;
+            const bs58 = require('bs58').default;
+            const keypair = Keypair.fromSecretKey(bs58.decode(wallets.solana));
+            solAddress = keypair.publicKey.toBase58();
+        }
+        if (wallets.evm) {
+            const ethers = require('ethers');
+            const wallet = new ethers.Wallet(wallets.evm);
+            evmAddress = wallet.address;
+        }
 
-        <div class="card">
-            <h3>📜 SỔ CÁI HOẠT ĐỘNG (10 Lệnh gần nhất)</h3>
-            ${logs.map((log: any) => `
-                <div class="log-entry">
-                    [${new Date(log.timestamp).toLocaleTimeString()}] 
-                    <span class="${log.amount < 0 ? 'danger' : ''}">${log.type}</span> : 
-                    $${log.amount} - ${log.description}
-                </div>
-            `).join('')}
-        </div>
-    </body>
-    </html>
-    `;
-    res.send(html);
-});
-
-// API Cập nhật Tiền nhà
-app.post('/update-rent', (req, res) => {
-    const newRent = parseFloat(req.body.newRent);
-    if (fs.existsSync(dbPath)) {
-        let state = JSON.parse(fs.readFileSync(dbPath, 'utf-8'));
-        state.config.monthlyRent = newRent;
-        state.config.dailyTax = parseFloat((newRent / 30).toFixed(2));
-        fs.writeFileSync(dbPath, JSON.stringify(state, null, 2));
+        res.json({
+            status: 'Hoạt động',
+            balance: balance,
+            addresses: { solana: solAddress, evm: evmAddress },
+            ledger: ledger,
+            taxRate: config.dailyTax || 10,
+            genesisPrompt
+        });
+    } catch (e: any) {
+        res.status(500).json({ error: 'Lỗi tải trạng thái từ Database', details: e.message });
     }
-    res.redirect('/');
 });
 
-// API Gửi tin nhắn
-app.post('/send-message', (req, res) => {
-    const msg = req.body.message;
-    let inbox = JSON.parse(fs.readFileSync(inboxPath, 'utf-8'));
-    inbox.push({ time: new Date().toISOString(), text: msg, readBy: [] });
-    fs.writeFileSync(inboxPath, JSON.stringify(inbox, null, 2));
-    res.redirect('/');
+// Serve frontend code
+app.get('/', (req, res) => {
+    res.send(`
+        <html>
+            <head>
+                <title>Agent Dashboard (V4 Enterprise)</title>
+                <style>
+                    body { font-family: Arial, sans-serif; padding: 20px; background: #1a1a1a; color: #fff; }
+                    .card { border: 1px solid #444; padding: 15px; margin: 10px 0; border-radius: 8px; background: #222; }
+                    .green { color: #00ff00; }
+                    .red { color: #ff4444; }
+                </style>
+            </head>
+            <body>
+                <h1>🤖 Trạm kiểm soát Agent (V4)</h1>
+                <div id="content">Đang tải dữ liệu từ SQLite...</div>
+                <script>
+                    fetch('/api/status').then(r=>r.json()).then(data => {
+                        const ledgerHtml = data.ledger.map(l => 
+                            '<li>[' + new Date(l.timestamp).toLocaleTimeString() + '] ' + l.type + ': <span class="' + (l.amount > 0 ? 'green' : 'red') + '">' + l.amount + '$</span> - ' + l.description + '</li>'
+                        ).join('');
+                        
+                        document.getElementById('content').innerHTML = 
+                            '<div class="card">' +
+                                '<h2>💰 Vốn lưu động: <span class="green">$' + data.balance.toFixed(2) + '</span></h2>' +
+                                '<p>Thuế mỗi ngày: ' + data.taxRate + '$</p>' +
+                                '<p>Ví Solana: ' + data.addresses.solana + '</p>' +
+                                '<p>Ví EVM (Base): ' + data.addresses.evm + '</p>' +
+                            '</div>' +
+                            '<div class="card">' +
+                                '<h3>📜 Lịch sử giao dịch (SQLite)</h3>' +
+                                '<ul>' + (ledgerHtml || 'Chưa có giao dịch') + '</ul>' +
+                            '</div>';
+                    });
+                </script>
+            </body>
+        </html>
+    `);
 });
 
 app.listen(PORT, () => {
-    console.log(`\n🌐 TỔNG LÃNH SỰ QUÁN đang chạy tại: http://localhost:${PORT}`);
-    console.log(`   (Mở trình duyệt trên Windows và truy cập link trên)`);
+    console.log('\\n📺 [DASHBOARD] Bảng điều khiển (V4) đang chạy tại: http://localhost:' + PORT);
 });

@@ -1,4 +1,4 @@
-import TelegramBot from 'node-telegram-bot-api';
+const TelegramBot = require('node-telegram-bot-api');
 import { getEnvOrAlert } from '../utils/env';
 import { writeInbox } from '../core/messaging';
 
@@ -11,7 +11,7 @@ async function startTelegramBot() {
 
     console.log(`\n🤖 [TELEGRAM] Bộ đàm liên lạc với Boss đã trực chiến...`);
 
-    bot.on('message', (msg) => {
+    bot.on('message', (msg: any) => {
         const chatId = msg.chat.id;
         const text = msg.text;
 

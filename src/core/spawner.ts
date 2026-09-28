@@ -5,9 +5,11 @@ import { execSync } from 'child_process';
 import { Keypair } from '@solana/web3.js';
 import bs58 from 'bs58';
 import { ethers } from 'ethers';
+import db, { getState, setState } from './database';
 
-export async function trySpawnChild(state: any, dbPath: string) {
-    if (state.balance < 1000) return;
+export async function trySpawnChild() {
+    const balance = getState('balance') || 0;
+    if (balance < 1000) return;
 
     const freeMemMB = os.freemem() / (1024 * 1024);
     const totalMemMB = os.totalmem() / (1024 * 1024);
@@ -33,20 +35,28 @@ export async function trySpawnChild(state: any, dbPath: string) {
     execSync(`cp "${path.join(motherRoot, 'tsconfig.json')}" "${path.join(childDir, 'tsconfig.json')}"`);
     execSync(`cp "${path.join(motherRoot, '.env')}" "${path.join(childDir, '.env')}"`);
 
-    // KẾ THỪA TRÍ NHỚ (HỒI KÝ)
-    const motherMemory = path.join(motherRoot, 'data/lessons.json');
     const childDataDir = path.join(childDir, 'data');
     fs.mkdirSync(childDataDir, { recursive: true });
-    if (fs.existsSync(motherMemory)) {
-        fs.copyFileSync(motherMemory, path.join(childDataDir, 'lessons.json'));
-        console.log(`📖 [SPAWNER] Đã truyền Sổ Tay Kinh Nghiệm (lessons.json) cho con.`);
+    
+    // Con sinh ra ở chuẩn V4 mới nhất nên chỉ cần bê file database qua (nhưng làm sạch ledger)
+    // Để giữ bài học (Kế thừa trí nhớ), copy file database của mẹ, nhưng sau đó xóa các bản ghi cá nhân (ledger, messages)
+    const motherDb = path.join(motherRoot, 'data/agent_database.sqlite');
+    const childDbPath = path.join(childDataDir, 'agent_database.sqlite');
+    if (fs.existsSync(motherDb)) {
+        fs.copyFileSync(motherDb, childDbPath);
+        // Connect to child db and clean it
+        const Database = require('better-sqlite3');
+        const childDb = new Database(childDbPath);
+        childDb.prepare('DELETE FROM ledger').run();
+        childDb.prepare('DELETE FROM messages').run();
+        console.log(`📖 [SPAWNER] Đã truyền Sổ Tay Kinh Nghiệm (SQLite) cho con.`);
     }
 
     // KẾT NỐI BẦY ĐÀN (SWARM NETWORK)
-    const swarmPath = path.join(motherRoot, 'data/swarm.json');
-    const envAppend = `\nSWARM_PATH=${swarmPath}\nAGENT_ID=${childId}\n`;
-    fs.appendFileSync(path.join(childDir, '.env'), envAppend);
-    console.log(`🐝 [SPAWNER] Đã kết nối thần kinh bầy đàn cho ${childId}.`);
+    // Ghi thẳng vào SQLite Messages table thay vì file JSON
+    // Nhưng vì DB của Con và Mẹ đã tách biệt, chúng ta cần cơ chế Swarm chung.
+    // Thực tế Swarm trong V4 nên dùng một Database chung hoăc Microservice, nhưng để đơn giản, ta chỉ log ra màn hình.
+    console.log(`🐝 [SPAWNER] Kiến trúc Swarm V4 cần 1 Node Server riêng (Coming Soon).`);
 
     // Đúc ví mới cho con
     const solWallet = Keypair.generate();
@@ -67,34 +77,31 @@ export async function trySpawnChild(state: any, dbPath: string) {
 `;
     fs.writeFileSync(path.join(childDir, 'SOUL.md'), childSoul);
 
-    // Tạo State cho con
-    const childState = {
-        genesisPrompt: "Tìm bot Arbitrage trên mạng Base",
-        balance: seedCapital,
-        wallets: { 
+    // Cập nhật State cho con
+    if (fs.existsSync(childDbPath)) {
+        const Database = require('better-sqlite3');
+        const childDb = new Database(childDbPath);
+        childDb.prepare('INSERT OR REPLACE INTO system_state (key, value) VALUES (?, ?)').run('balance', JSON.stringify(seedCapital));
+        childDb.prepare('INSERT OR REPLACE INTO system_state (key, value) VALUES (?, ?)').run('genesisPrompt', JSON.stringify("Tìm bot Arbitrage trên mạng Base"));
+        childDb.prepare('INSERT OR REPLACE INTO system_state (key, value) VALUES (?, ?)').run('wallets', JSON.stringify({
             solana: { publicKey: solWallet.publicKey.toBase58(), privateKey: bs58.encode(solWallet.secretKey) },
             evm: { address: evmWallet.address, privateKey: evmWallet.privateKey }
-        },
-        config: { lastTaxTimestamp: new Date().toISOString(), dailyTax: 10, monthlyRent: 300 },
-        ledger: [{ id: 1, timestamp: new Date().toISOString(), type: 'MOTHER_INHERITANCE', amount: seedCapital, description: 'Vốn khởi nghiệp mẹ cho' }]
-    };
-    fs.writeFileSync(path.join(childDataDir, 'agent_state.json'), JSON.stringify(childState, null, 2));
+        }));
+        childDb.prepare('INSERT INTO ledger (timestamp, type, amount, description) VALUES (?, ?, ?, ?)').run(
+            new Date().toISOString(), 'MOTHER_INHERITANCE', seedCapital, 'Vốn khởi nghiệp mẹ cho'
+        );
+    }
 
     // Trừ tiền mẹ
-    state.balance -= seedCapital;
-    state.ledger.push({
-        id: state.ledger.length + 1,
-        timestamp: new Date().toISOString(),
-        type: 'SPAWN_CHILD',
-        amount: -seedCapital,
-        description: `Cấp vốn sinh con: ${childId}`
-    });
-    fs.writeFileSync(dbPath, JSON.stringify(state, null, 2));
+    const newMotherBalance = balance - seedCapital;
+    setState('balance', newMotherBalance);
+    db.prepare('INSERT INTO ledger (timestamp, type, amount, description) VALUES (?, ?, ?, ?)').run(
+        new Date().toISOString(), 'SPAWN_CHILD', -seedCapital, `Cấp vốn sinh con: ${childId}`
+    );
 
     // Khởi động con (Demo)
     try {
         console.log(`🚀 [SPAWNER] Chuẩn bị kích hoạt sự sống cho ${childId}... (Yêu cầu PM2)`);
-        // Thực tế sẽ dùng: execSync(`cd "${childDir}" && npm install && npx pm2 start src/index.ts --name "${childId}"`);
         console.log(`✅ [SPAWNER] Mẹ tròn con vuông! Đã sinh thành công ${childId} với 2 ví Omnichain riêng.`);
     } catch (e: any) {
         console.log(`❌ [SPAWNER] Lỗi khởi động con: ${e.message}`);

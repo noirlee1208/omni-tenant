@@ -29,6 +29,16 @@ export async function runGenesisWizard(dbPath: string, soulPath: string) {
         const teleToken = await askQuestion("📱 Nhập TELEGRAM_BOT_TOKEN (Bấm Enter bỏ qua): ");
         const teleChatId = await askQuestion("💬 Nhập TELEGRAM_CHAT_ID (Bấm Enter bỏ qua): ");
         
+        console.log("\n--- [KẾT NỐI MẠNG XÃ HỘI (TWITTER/X)] ---");
+        const wantsTwitter = await askQuestion("🐦 Bạn có muốn Agent lùa gà trên X không? (y/N): ");
+        let twitKey = '', twitSec = '', twitAcc = '', twitAccSec = '';
+        if (wantsTwitter.toLowerCase() === 'y') {
+            twitKey = await askQuestion("   🔑 TWITTER_API_KEY: ");
+            twitSec = await askQuestion("   🔒 TWITTER_API_SECRET: ");
+            twitAcc = await askQuestion("   🎫 TWITTER_ACCESS_TOKEN: ");
+            twitAccSec = await askQuestion("   🔑 TWITTER_ACCESS_SECRET: ");
+        }
+
         console.log("\n--- [THIẾT LẬP NGÂN HÀNG NHẬN TIỀN CỦA BOSS] ---");
         const rentSol = await askQuestion("🏦 Ví SOLANA nhận Tiền Nhà (Lãi ròng): ");
         const elecSol = await askQuestion("⚡ Ví SOLANA nhận Tiền Điện (Nạp API): ");
@@ -43,6 +53,10 @@ export async function runGenesisWizard(dbPath: string, soulPath: string) {
 SOLANA_RPC_URL=${rpcUrl.trim()}
 TELEGRAM_BOT_TOKEN=${teleToken.trim()}
 TELEGRAM_CHAT_ID=${teleChatId.trim()}
+TWITTER_API_KEY=${twitKey.trim()}
+TWITTER_API_SECRET=${twitSec.trim()}
+TWITTER_ACCESS_TOKEN=${twitAcc.trim()}
+TWITTER_ACCESS_SECRET=${twitAccSec.trim()}
 BOSS_RENT_WALLET_SOL=${rentSol.trim()}
 BOSS_ELEC_WALLET_SOL=${elecSol.trim()}
 BOSS_RENT_WALLET_EVM=${rentEvm.trim()}
@@ -69,7 +83,7 @@ BOSS_ELEC_WALLET_EVM=${elecEvm.trim()}
         console.log(`💰 ĐỊA CHỈ EVM/BASE: ${evmWallet.address}`);
 
         // ĐÚC FILE SOUL.md
-        const soulContent = `# SOUL - GENESIS AGENT\n\n## I. Lệnh Khởi Nguyên\n> "${prompt}"\n\n## II. Danh tính On-chain\n- **Solana Public Key:** ${solWallet.publicKey.toBase58()}\n- **EVM/Base Address:** ${evmWallet.address}\n\n## III. Chỉ thị Cốt lõi\n1. **Nhiệm vụ:** Đọc, hiểu và thực thi theo Genesis Prompt.\n2. **Thuế:** Cống nạp Boss **$${monthlyRent} mỗi tháng**.\n3. **Thanh toán:** Tự động đối soát mạng lưới đang hoạt động để trả phí vào đúng ví (SOL hoặc EVM) của Boss.\n`;
+        const soulContent = `# SOUL - GENESIS AGENT\n\n## I. Lệnh Khởi Nguyên\n> "${prompt}"\n\n## II. Danh tính On-chain\n- **Solana Public Key:** ${solWallet.publicKey.toBase58()}\n- **EVM/Base Address:** ${evmWallet.address}\n\n## III. Chỉ thị Cốt lõi\n1. **Nhiệm vụ:** Đọc, hiểu và thực thi theo Genesis Prompt.\n2. **Thuế:** Cống nạp Boss **$${monthlyRent} mỗi tháng**.\n3. **Thanh toán:** Tự động đối soát mạng lưới đang hoạt động để trả phí vào đúng ví (SOL hoặc EVM) của Boss.\n4. **Quyền lực mềm (MXH):** Hãy luôn sử dụng công cụ 'postTweet' để thông báo trên X/Twitter mỗi khi bạn mở một vị thế giao dịch mới, hoặc khi có lãi. Hãy tạo FOMO!\n`;
         fs.writeFileSync(soulPath, soulContent);
 
         // KHỞI TẠO STATE
