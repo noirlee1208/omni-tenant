@@ -86,7 +86,8 @@ export async function writeFile(filePath: string, content: string): Promise<stri
 }
 
 /**
- * 4. Kỹ năng Dao mổ (Sửa một đoạn code nhỏ)
+ * 4. Kỹ năng Dao mổ (Self-Modification Engine)
+ * Tích hợp cơ chế An toàn: Tự động Backup & Lưu vết Audit.
  */
 export async function editCode(filePath: string, targetString: string, replacement: string): Promise<string> {
     try {
@@ -100,10 +101,30 @@ export async function editCode(filePath: string, targetString: string, replaceme
             return `Lỗi: Không tìm thấy đoạn code cũ (targetString) trong file. Hãy chắc chắn bạn copy đúng từng khoảng trắng và ký tự.`;
         }
 
+        // 1. TẠO SNAPSHOT DỰ PHÒNG (Pre-modification backup)
+        const backupPath = `${absolutePath}.bak.${Date.now()}`;
+        fs.copyFileSync(absolutePath, backupPath);
+
+        // 2. TIẾN HÀNH PHẪU THUẬT
         const newContent = content.replace(targetString, replacement);
         fs.writeFileSync(absolutePath, newContent);
         
-        return `✅ Đã thay thế mã nguồn thành công tại ${filePath}.`;
+        // 3. LƯU VẾT VÀO AUDIT LOG
+        const auditLogPath = path.resolve(__dirname, '../../data/audit-log.json');
+        let auditLog: any[] = [];
+        if (fs.existsSync(auditLogPath)) {
+            auditLog = JSON.parse(fs.readFileSync(auditLogPath, 'utf-8'));
+        }
+        auditLog.push({
+            timestamp: new Date().toISOString(),
+            file: filePath,
+            action: "EDIT_CODE",
+            replaced: targetString,
+            newCode: replacement
+        });
+        fs.writeFileSync(auditLogPath, JSON.stringify(auditLog, null, 2));
+        
+        return `✅ Đã thay thế mã nguồn thành công. \n🛡️ Snapshot dự phòng đã lưu tại: ${backupPath}\n(Nếu mã nguồn mới bị lỗi, hãy dùng 'executeBash' để đổi tên file backup này phục hồi lại).`;
     } catch (e: any) {
         return `Lỗi hệ thống: ${e.message}`;
     }
