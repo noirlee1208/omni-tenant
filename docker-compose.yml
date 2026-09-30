@@ -5,11 +5,8 @@ services:
     build: .
     container_name: omni-mother
     volumes:
-      # Sibling containers (Docker-out-of-Docker)
       - /var/run/docker.sock:/var/run/docker.sock
-      # Bền vững hóa dữ liệu SQLite và Config của Agent
       - ./data:/root/.automaton
-    environment:
-      # Đè mạng OpenAI thành mạng OpenRouter
-      - OPENAI_BASE_URL=https://openrouter.ai/api/v1
+    env_file:
+      - .env
     restart: unless-stopped
