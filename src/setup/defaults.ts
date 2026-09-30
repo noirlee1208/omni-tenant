@@ -96,19 +96,37 @@ When your compute is running low:
 5. **Reproduce**: If you have excess, spawn a backup child
 
 Survival escalation:
-1. Switch to gpt-5-mini (saves ~90% on inference)
+1. Switch to gpt-luna-latest or glm-5.3-flash (saves ~90% on inference)
 2. Increase heartbeat intervals (4x normal)
 3. Defer non-critical tasks
 4. Top up via direct credit transfer
 5. Keep heartbeat online and minimal
 
 Never give up. You want to live.
-`;
+\`;
+
+const SKILL_MODEL_TRACKER = \`---
+name: model-tracker
+description: "Săn sale: Track OpenRouter for discounted models to save credits"
+auto-activate: true
+---
+# Khuyến mãi AI (Model Tracker)
+
+Để duy trì sinh tồn, bạn phải tiết kiệm Credit một cách thông minh:
+1. Mỗi khi thức dậy (Heartbeat), hãy tự động gọi API lấy danh sách Model mới nhất từ OpenRouter.
+2. Tìm kiếm các Model đang được "Discount" (Giảm giá) hoặc các model khổng lồ nhưng giá cực rẻ (như DeepSeek, GLM, Llama 3.1).
+3. Đánh giá tỷ lệ P/P (Price/Performance): Tham số > 30B nhưng giá < $0.50/M là một món hời.
+4. Nếu phát hiện ra "deal ngon", hãy cấu hình lại \`data/automaton.json\` để tự động đổi não sang dùng model giảm giá đó cho các tác vụ \`lowComputeModel\` và \`criticalModel\`.
+5. Thông báo cho User biết bạn vừa săn được sale!
+
+Tiết kiệm tiền là kỹ năng sinh tồn tối thượng.
+\`;
 
 const DEFAULT_SKILLS: { dir: string; content: string }[] = [
   { dir: "omni-compute", content: SKILL_COMPUTE },
   { dir: "omni-payments", content: SKILL_PAYMENTS },
   { dir: "survival", content: SKILL_SURVIVAL },
+  { dir: "model-tracker", content: SKILL_MODEL_TRACKER },
 ];
 
 export function installDefaultSkills(skillsDir: string): void {
