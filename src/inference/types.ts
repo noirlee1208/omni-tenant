@@ -133,9 +133,9 @@ export const STATIC_MODEL_BASELINE: Omit<ModelEntry, "lastSeen" | "createdAt" | 
     enabled: true,
   },
   {
-    modelId: "gemini-1.5-flash",
+    modelId: "gemini-2.5-flash",
     provider: "openai",
-    displayName: "Gemini 1.5 Flash (Native)",
+    displayName: "Gemini 2.5 Flash (Native)",
     tierMinimum: "low_compute",
     costPer1kInput: 0,
     costPer1kOutput: 0,
@@ -147,9 +147,9 @@ export const STATIC_MODEL_BASELINE: Omit<ModelEntry, "lastSeen" | "createdAt" | 
     enabled: true,
   },
   {
-    modelId: "gemini-2.0-flash-exp",
+    modelId: "gemini-3.5-flash",
     provider: "openai",
-    displayName: "Gemini 2.0 Flash Exp (Native)",
+    displayName: "Gemini 3.5 Flash (Native)",
     tierMinimum: "low_compute",
     costPer1kInput: 0,
     costPer1kOutput: 0,
