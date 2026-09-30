@@ -159,6 +159,62 @@ export const STATIC_MODEL_BASELINE: Omit<ModelEntry, "lastSeen" | "createdAt" | 
     supportsVision: true,
     parameterStyle: "max_tokens",
     enabled: true,
+  },
+  {
+    modelId: "anthropic/claude-sonnet-5.5",
+    provider: "anthropic",
+    displayName: "Claude Sonnet 5.5",
+    tierMinimum: "normal",
+    costPer1kInput: 20,    // $2.00/M
+    costPer1kOutput: 100,  // $10.00/M
+    maxTokens: 16384,
+    contextWindow: 1000000,
+    supportsTools: true,
+    supportsVision: true,
+    parameterStyle: "max_tokens",
+    enabled: true,
+  },
+  {
+    modelId: "openai/gpt-6-sol-pro",
+    provider: "openai",
+    displayName: "GPT-6 Sol Pro",
+    tierMinimum: "normal",
+    costPer1kInput: 20,    // $2.00/M
+    costPer1kOutput: 100,  // $10.00/M
+    maxTokens: 32768,
+    contextWindow: 1050000,
+    supportsTools: true,
+    supportsVision: true,
+    parameterStyle: "max_completion_tokens",
+    enabled: true,
+  },
+  {
+    modelId: "deepseek/deepseek-v4.1-flash",
+    provider: "omni",
+    displayName: "DeepSeek V4.1 Flash",
+    tierMinimum: "normal",
+    costPer1kInput: 2,     // ~$0.02/M
+    costPer1kOutput: 40,   // ~$0.40/M
+    maxTokens: 8192,
+    contextWindow: 1048576,
+    supportsTools: true,
+    supportsVision: true,
+    parameterStyle: "max_tokens",
+    enabled: true,
+  },
+  {
+    modelId: "z-ai/glm-5.3-flash",
+    provider: "omni",
+    displayName: "GLM 5.3 Flash",
+    tierMinimum: "low_compute",
+    costPer1kInput: 2,     // $0.02/M
+    costPer1kOutput: 25,   // $0.25/M
+    maxTokens: 8192,
+    contextWindow: 1048576,
+    supportsTools: true,
+    supportsVision: true,
+    parameterStyle: "max_tokens",
+    enabled: true,
   }
 ];
 
