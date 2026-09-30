@@ -119,7 +119,8 @@ Environment:
 
   if (args.includes("--setup")) {
     const { runSetupWizard } = await import("./setup/wizard.js");
-    await runSetupWizard();
+    const isFree = args.includes("--free");
+    await runSetupWizard(isFree);
     process.exit(0);
   }
 
@@ -196,7 +197,8 @@ async function run(): Promise<void> {
   let config = loadConfig();
   if (!config) {
     const { runSetupWizard } = await import("./setup/wizard.js");
-    config = await runSetupWizard();
+    const isFree = args.includes("--free");
+    config = await runSetupWizard(isFree);
   }
 
   // Load wallet (chain-aware)

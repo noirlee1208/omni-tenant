@@ -20,7 +20,7 @@ import { detectEnvironment } from "./environment.js";
 import { generateSoulMd, installDefaultSkills } from "./defaults.js";
 import type { ChainType } from "../identity/chain.js";
 
-export async function runSetupWizard(): Promise<AutomatonConfig> {
+export async function runSetupWizard(isFree: boolean = false): Promise<AutomatonConfig> {
   showBanner();
 
   console.log(chalk.white("  First-run setup. Let's bring your automaton to life.\n"));
@@ -132,6 +132,22 @@ export async function runSetupWizard(): Promise<AutomatonConfig> {
     treasuryPolicy,
     chainType: walletChainType,
   });
+
+  if (isFree) {
+    config.inferenceModel = "nvidia/nemotron-3-ultra-550b-a55b:free";
+    if (config.modelStrategy) {
+      config.modelStrategy.inferenceModel = "nvidia/nemotron-3-ultra-550b-a55b:free";
+      config.modelStrategy.lowComputeModel = "meta-llama/llama-3.1-8b-instruct:free";
+      config.modelStrategy.criticalModel = "meta-llama/llama-3.1-8b-instruct:free";
+    }
+  } else {
+    config.inferenceModel = "anthropic/claude-3.5-sonnet:beta";
+    if (config.modelStrategy) {
+      config.modelStrategy.inferenceModel = "anthropic/claude-3.5-sonnet:beta";
+      config.modelStrategy.lowComputeModel = "openai/gpt-4o-mini";
+      config.modelStrategy.criticalModel = "openai/gpt-4o-mini";
+    }
+  }
 
   saveConfig(config);
   console.log(chalk.green("  automaton.json written"));
