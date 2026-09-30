@@ -201,7 +201,7 @@ export const STATIC_MODEL_BASELINE: Omit<ModelEntry, "lastSeen" | "createdAt" | 
     supportsVision: true,
     parameterStyle: "max_tokens",
     enabled: true,
-  }
+  },
   {
     modelId: "openai/gpt-luna-latest",
     provider: "openai",
