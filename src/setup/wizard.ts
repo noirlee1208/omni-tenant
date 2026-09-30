@@ -145,7 +145,7 @@ export async function runSetupWizard(isFree: boolean = false): Promise<Automaton
     if (config.modelStrategy) {
       config.modelStrategy.inferenceModel = "anthropic/claude-sonnet-5.5";
       config.modelStrategy.lowComputeModel = "openai/gpt-luna-latest";
-      config.modelStrategy.criticalModel = "deepseek/deepseek-v4.1-flash";
+      config.modelStrategy.criticalModel = "z-ai/glm-5.3-flash";
     }
   }
 
