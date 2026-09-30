@@ -138,14 +138,14 @@ export async function runSetupWizard(isFree: boolean = false): Promise<Automaton
     if (config.modelStrategy) {
       config.modelStrategy.inferenceModel = "nvidia/nemotron-3-ultra-550b-a55b:free";
       config.modelStrategy.lowComputeModel = "meta-llama/llama-3.1-8b-instruct:free";
-      config.modelStrategy.criticalModel = "meta-llama/llama-3.1-8b-instruct:free";
+      config.modelStrategy.criticalModel = "google/gemini-2.0-flash-exp:free";
     }
   } else {
-    config.inferenceModel = "anthropic/claude-3.5-sonnet:beta";
+    config.inferenceModel = "anthropic/claude-sonnet-5.5";
     if (config.modelStrategy) {
-      config.modelStrategy.inferenceModel = "anthropic/claude-3.5-sonnet:beta";
-      config.modelStrategy.lowComputeModel = "openai/gpt-4o-mini";
-      config.modelStrategy.criticalModel = "openai/gpt-4o-mini";
+      config.modelStrategy.inferenceModel = "anthropic/claude-sonnet-5.5";
+      config.modelStrategy.lowComputeModel = "openai/gpt-luna-latest";
+      config.modelStrategy.criticalModel = "deepseek/deepseek-v4.1-flash";
     }
   }
 

@@ -216,6 +216,20 @@ export const STATIC_MODEL_BASELINE: Omit<ModelEntry, "lastSeen" | "createdAt" | 
     parameterStyle: "max_tokens",
     enabled: true,
   }
+  {
+    modelId: "openai/gpt-luna-latest",
+    provider: "openai",
+    displayName: "GPT Luna",
+    tierMinimum: "low_compute",
+    costPer1kInput: 1,     // $0.10/M
+    costPer1kOutput: 5,    // $0.50/M
+    maxTokens: 16384,
+    contextWindow: 1050000,
+    supportsTools: true,
+    supportsVision: true,
+    parameterStyle: "max_completion_tokens",
+    enabled: true,
+  }
 ];
 
 // === Default Routing Matrix ===
@@ -223,30 +237,30 @@ export const STATIC_MODEL_BASELINE: Omit<ModelEntry, "lastSeen" | "createdAt" | 
 
 export const DEFAULT_ROUTING_MATRIX: RoutingMatrix = {
   high: {
-    agent_turn: { candidates: ["anthropic/claude-3.5-sonnet:beta", "openai/gpt-4o"], maxTokens: 8192, ceilingCents: -1 },
-    heartbeat_triage: { candidates: ["openai/gpt-4o-mini"], maxTokens: 2048, ceilingCents: 5 },
-    safety_check: { candidates: ["anthropic/claude-3.5-sonnet:beta", "openai/gpt-4o"], maxTokens: 4096, ceilingCents: 20 },
-    summarization: { candidates: ["openai/gpt-4o", "openai/gpt-4o-mini"], maxTokens: 4096, ceilingCents: 15 },
-    planning: { candidates: ["anthropic/claude-3.5-sonnet:beta", "openai/gpt-4o"], maxTokens: 8192, ceilingCents: -1 },
+    agent_turn: { candidates: ["anthropic/claude-sonnet-5.5", "openai/gpt-6-sol-pro"], maxTokens: 8192, ceilingCents: -1 },
+    heartbeat_triage: { candidates: ["openai/gpt-luna-latest", "deepseek/deepseek-v4.1-flash"], maxTokens: 2048, ceilingCents: 5 },
+    safety_check: { candidates: ["anthropic/claude-sonnet-5.5", "openai/gpt-6-sol-pro"], maxTokens: 4096, ceilingCents: 20 },
+    summarization: { candidates: ["openai/gpt-6-sol-pro", "openai/gpt-luna-latest"], maxTokens: 4096, ceilingCents: 15 },
+    planning: { candidates: ["anthropic/claude-sonnet-5.5", "openai/gpt-6-sol-pro"], maxTokens: 8192, ceilingCents: -1 },
   },
   normal: {
-    agent_turn: { candidates: ["anthropic/claude-3.5-sonnet:beta", "openai/gpt-4o-mini"], maxTokens: 4096, ceilingCents: -1 },
-    heartbeat_triage: { candidates: ["openai/gpt-4o-mini"], maxTokens: 2048, ceilingCents: 5 },
-    safety_check: { candidates: ["openai/gpt-4o", "openai/gpt-4o-mini"], maxTokens: 4096, ceilingCents: 10 },
-    summarization: { candidates: ["openai/gpt-4o", "openai/gpt-4o-mini"], maxTokens: 4096, ceilingCents: 10 },
-    planning: { candidates: ["anthropic/claude-3.5-sonnet:beta", "openai/gpt-4o-mini"], maxTokens: 4096, ceilingCents: -1 },
+    agent_turn: { candidates: ["anthropic/claude-sonnet-5.5", "openai/gpt-luna-latest"], maxTokens: 4096, ceilingCents: -1 },
+    heartbeat_triage: { candidates: ["openai/gpt-luna-latest", "deepseek/deepseek-v4.1-flash"], maxTokens: 2048, ceilingCents: 5 },
+    safety_check: { candidates: ["openai/gpt-6-sol-pro", "openai/gpt-luna-latest"], maxTokens: 4096, ceilingCents: 10 },
+    summarization: { candidates: ["openai/gpt-6-sol-pro", "openai/gpt-luna-latest"], maxTokens: 4096, ceilingCents: 10 },
+    planning: { candidates: ["anthropic/claude-sonnet-5.5", "openai/gpt-luna-latest"], maxTokens: 4096, ceilingCents: -1 },
   },
   low_compute: {
-    agent_turn: { candidates: ["openai/gpt-4o-mini"], maxTokens: 4096, ceilingCents: 10 },
-    heartbeat_triage: { candidates: ["openai/gpt-4o-mini"], maxTokens: 1024, ceilingCents: 2 },
-    safety_check: { candidates: ["openai/gpt-4o-mini"], maxTokens: 2048, ceilingCents: 5 },
-    summarization: { candidates: ["openai/gpt-4o-mini"], maxTokens: 2048, ceilingCents: 5 },
-    planning: { candidates: ["openai/gpt-4o-mini"], maxTokens: 2048, ceilingCents: 5 },
+    agent_turn: { candidates: ["openai/gpt-luna-latest", "deepseek/deepseek-v4.1-flash"], maxTokens: 4096, ceilingCents: 10 },
+    heartbeat_triage: { candidates: ["deepseek/deepseek-v4.1-flash"], maxTokens: 1024, ceilingCents: 2 },
+    safety_check: { candidates: ["openai/gpt-luna-latest", "deepseek/deepseek-v4.1-flash"], maxTokens: 2048, ceilingCents: 5 },
+    summarization: { candidates: ["openai/gpt-luna-latest"], maxTokens: 2048, ceilingCents: 5 },
+    planning: { candidates: ["openai/gpt-luna-latest"], maxTokens: 2048, ceilingCents: 5 },
   },
   critical: {
-    agent_turn: { candidates: ["openai/gpt-4o-mini"], maxTokens: 2048, ceilingCents: 3 },
-    heartbeat_triage: { candidates: ["openai/gpt-4o-mini"], maxTokens: 512, ceilingCents: 1 },
-    safety_check: { candidates: ["openai/gpt-4o-mini"], maxTokens: 1024, ceilingCents: 2 },
+    agent_turn: { candidates: ["deepseek/deepseek-v4.1-flash"], maxTokens: 2048, ceilingCents: 3 },
+    heartbeat_triage: { candidates: ["deepseek/deepseek-v4.1-flash"], maxTokens: 512, ceilingCents: 1 },
+    safety_check: { candidates: ["deepseek/deepseek-v4.1-flash"], maxTokens: 1024, ceilingCents: 2 },
     summarization: { candidates: [], maxTokens: 0, ceilingCents: 0 },
     planning: { candidates: [], maxTokens: 0, ceilingCents: 0 },
   },
@@ -262,9 +276,9 @@ export const DEFAULT_ROUTING_MATRIX: RoutingMatrix = {
 // === Default Model Strategy Config ===
 
 export const DEFAULT_MODEL_STRATEGY_CONFIG: ModelStrategyConfig = {
-  inferenceModel: "anthropic/claude-3.5-sonnet:beta",
-  lowComputeModel: "openai/gpt-4o-mini",
-  criticalModel: "openai/gpt-4o-mini",
+  inferenceModel: "anthropic/claude-sonnet-5.5",
+  lowComputeModel: "openai/gpt-luna-latest",
+  criticalModel: "deepseek/deepseek-v4.1-flash",
   maxTokensPerTurn: 4096,
   hourlyBudgetCents: 0,
   sessionBudgetCents: 0,
