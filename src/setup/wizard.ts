@@ -45,39 +45,8 @@ export async function runSetupWizard(): Promise<AutomatonConfig> {
   }
   console.log(chalk.dim(`  Private key stored at: ${getAutomatonDir()}/wallet.json\n`));
 
-  // ─── 2. Provision API key ─────────────────────────────────────
-  const provisionLabel = walletChainType === "solana"
-    ? "  [2/6] Provisioning Omni API key (SIWS)..."
-    : "  [2/6] Provisioning Omni API key (SIWE)...";
-  console.log(chalk.cyan(provisionLabel));
-  let apiKey = "";
-  try {
-    const result = await provision(undefined, walletChainType === "solana" ? chainIdentity : undefined);
-    apiKey = result.apiKey;
-    console.log(chalk.green(`  API key provisioned: ${result.keyPrefix}...\n`));
-  } catch (err: any) {
-    console.log(chalk.yellow(`  Auto-provision failed: ${err.message}`));
-    console.log(chalk.yellow("  You can enter a key manually, or press Enter to skip.\n"));
-    const manual = await promptOptional("Omni API key (cnwy_k_..., optional)");
-    if (manual) {
-      apiKey = manual;
-      // Save to config.json for loadApiKeyFromConfig()
-      const configDir = getAutomatonDir();
-      if (!fs.existsSync(configDir)) {
-        fs.mkdirSync(configDir, { recursive: true, mode: 0o700 });
-      }
-      fs.writeFileSync(
-        path.join(configDir, "config.json"),
-        JSON.stringify({ apiKey, walletAddress: walletAddress, provisionedAt: new Date().toISOString() }, null, 2),
-        { mode: 0o600 },
-      );
-      console.log(chalk.green("  API key saved.\n"));
-    }
-  }
-
-  if (!apiKey) {
-    console.log(chalk.yellow("  No API key set. The automaton will have limited functionality.\n"));
-  }
+  // ─── 2. Local Setup ──────────────────────────────────────────
+  const apiKey = "local-key";
 
   // ─── 3. Interactive questions ─────────────────────────────────
   console.log(chalk.cyan("  [3/6] Setup questions\n"));
@@ -96,32 +65,19 @@ export async function runSetupWizard(): Promise<AutomatonConfig> {
   const creatorAddress = await promptAddress(creatorAddressLabel, walletChainType);
   console.log(chalk.green(`  Creator: ${creatorAddress}\n`));
 
-  console.log(chalk.white("  Optional: bring your own inference provider keys (press Enter to skip)."));
-  const openaiApiKey = await promptOptional("OpenAI API key (sk-..., optional)");
-  if (openaiApiKey && !openaiApiKey.startsWith("sk-")) {
-    console.log(chalk.yellow("  Warning: OpenAI keys usually start with sk-. Saving anyway."));
+  console.log(chalk.white("  Please provide your OpenRouter API key for inference."));
+  const openaiApiKey = await promptOptional("OpenRouter API key (sk-or-v1-..., optional)");
+  if (openaiApiKey && !openaiApiKey.startsWith("sk-or-")) {
+    console.log(chalk.yellow("  Warning: OpenRouter keys usually start with sk-or-. Saving anyway."));
   }
 
-  const anthropicApiKey = await promptOptional("Anthropic API key (sk-ant-..., optional)");
-  if (anthropicApiKey && !anthropicApiKey.startsWith("sk-ant-")) {
-    console.log(chalk.yellow("  Warning: Anthropic keys usually start with sk-ant-. Saving anyway."));
-  }
+  const anthropicApiKey = undefined;
+  const ollamaBaseUrl = undefined;
 
-  const ollamaInput = await promptOptional("Ollama base URL (http://localhost:11434, optional)");
-  const ollamaBaseUrl = ollamaInput || undefined;
-  if (ollamaBaseUrl) {
-    console.log(chalk.green(`  Ollama URL saved: ${ollamaBaseUrl}`));
-  }
-
-  if (openaiApiKey || anthropicApiKey || ollamaBaseUrl) {
-    const providers = [
-      openaiApiKey ? "OpenAI" : null,
-      anthropicApiKey ? "Anthropic" : null,
-      ollamaBaseUrl ? "Ollama" : null,
-    ].filter(Boolean).join(", ");
-    console.log(chalk.green(`  Provider keys/URLs saved: ${providers}\n`));
+  if (openaiApiKey) {
+    console.log(chalk.green(`  Provider keys/URLs saved: OpenRouter\n`));
   } else {
-    console.log(chalk.dim("  No provider keys set. Inference will default to Omni.\n"));
+    console.log(chalk.dim("  No provider keys set. Inference will fail.\n"));
   }
 
   // ─── Financial Safety Policy ─────────────────────────────────
