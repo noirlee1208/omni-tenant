@@ -131,6 +131,34 @@ export const STATIC_MODEL_BASELINE: Omit<ModelEntry, "lastSeen" | "createdAt" | 
     supportsVision: true,
     parameterStyle: "max_tokens",
     enabled: true,
+  },
+  {
+    modelId: "deepseek/deepseek-chat",
+    provider: "omni",
+    displayName: "DeepSeek V3",
+    tierMinimum: "normal",
+    costPer1kInput: 1,     // $0.14/M
+    costPer1kOutput: 3,    // $0.28/M
+    maxTokens: 8192,
+    contextWindow: 64000,
+    supportsTools: true,
+    supportsVision: false,
+    parameterStyle: "max_tokens",
+    enabled: true,
+  },
+  {
+    modelId: "google/gemini-1.5-pro",
+    provider: "omni",
+    displayName: "Gemini 1.5 Pro",
+    tierMinimum: "normal",
+    costPer1kInput: 12,    // $1.25/M
+    costPer1kOutput: 50,   // $5.00/M
+    maxTokens: 8192,
+    contextWindow: 2000000,
+    supportsTools: true,
+    supportsVision: true,
+    parameterStyle: "max_tokens",
+    enabled: true,
   }
 ];
 
