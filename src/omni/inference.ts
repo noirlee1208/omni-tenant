@@ -208,8 +208,8 @@ async function chatViaOpenAiCompatible(params: {
   backend: "omni" | "openai" | "ollama";
   httpClient: ResilientHttpClient;
 }): Promise<InferenceResponse> {
-  const baseUrl = params.apiUrl.replace(/\/v1\/?$/, "");
-  const resp = await params.httpClient.request(`${baseUrl}/v1/chat/completions`, {
+  const baseUrl = params.apiUrl.replace(/\/$/, "");
+  const endpoint = baseUrl.endsWith("/v1") || baseUrl.endsWith("/openai") ? `${baseUrl}/chat/completions` : `${baseUrl}/v1/chat/completions`; const resp = await params.httpClient.request(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",

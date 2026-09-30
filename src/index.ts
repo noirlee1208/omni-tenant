@@ -3,7 +3,7 @@ import { startTelegramDaemon } from "./social/telegram.js";
 import "dotenv/config";
 
 // Tự động ép hệ thống gọi sang mạng OpenRouter (bỏ qua OpenAI)
-process.env.OPENAI_BASE_URL = "https://openrouter.ai/api/v1";
+if (!process.env.OPENAI_BASE_URL) { process.env.OPENAI_BASE_URL = "https://openrouter.ai/api/v1"; }
 
 /**
  * Omni Automaton Runtime
