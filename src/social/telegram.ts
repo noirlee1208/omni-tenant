@@ -1,10 +1,13 @@
-const TelegramBot = require('node-telegram-bot-api');
-
-export function startTelegramDaemon(token: string, db: any) {
+export async function startTelegramDaemon(token: string, db: any) {
     if (!token || token === 'YOUR_TELEGRAM_BOT_TOKEN') {
         console.log('⚠️ [TELEGRAM] Bỏ qua khởi động: Chưa cấu hình TELEGRAM_BOT_TOKEN.');
         return;
     }
+    
+    // Dynamic import to bypass ESM issues with commonjs
+    const pkg = await import('node-telegram-bot-api');
+    const TelegramBot = pkg.default || pkg;
+    
     const bot = new TelegramBot(token, { polling: true });
     
     bot.on('message', (msg: any) => {
