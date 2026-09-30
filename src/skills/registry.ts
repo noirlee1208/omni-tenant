@@ -18,7 +18,7 @@ import type {
   Skill,
   SkillSource,
   AutomatonDatabase,
-  ConwayClient,
+  OmniClient,
 } from "../types.js";
 import { parseSkillMd } from "./format.js";
 
@@ -52,7 +52,7 @@ export async function installSkillFromGit(
   name: string,
   skillsDir: string,
   db: AutomatonDatabase,
-  _conway: ConwayClient,
+  _omni: OmniClient,
 ): Promise<Skill | null> {
   // Validate inputs to prevent injection
   if (!SKILL_NAME_RE.test(name)) {
@@ -100,7 +100,7 @@ export async function installSkillFromUrl(
   name: string,
   skillsDir: string,
   db: AutomatonDatabase,
-  _conway: ConwayClient,
+  _omni: OmniClient,
 ): Promise<Skill | null> {
   // Validate inputs to prevent injection
   if (!SKILL_NAME_RE.test(name)) {
@@ -148,7 +148,7 @@ export async function createSkill(
   instructions: string,
   skillsDir: string,
   db: AutomatonDatabase,
-  conway: ConwayClient,
+  omni: OmniClient,
 ): Promise<Skill> {
   // Validate name to prevent path traversal/injection
   if (!SKILL_NAME_RE.test(name)) {
@@ -174,7 +174,7 @@ export async function createSkill(
   const content = `---\n${frontmatter}---\n\n${safeInstructions}`;
 
   const skillMdPath = path.join(targetDir, "SKILL.md");
-  await conway.writeFile(skillMdPath, content);
+  await omni.writeFile(skillMdPath, content);
 
   const skill: Skill = {
     name,
@@ -198,7 +198,7 @@ export async function createSkill(
 export async function removeSkill(
   name: string,
   db: AutomatonDatabase,
-  _conway: ConwayClient,
+  _omni: OmniClient,
   skillsDir: string,
   deleteFiles: boolean = false,
 ): Promise<void> {

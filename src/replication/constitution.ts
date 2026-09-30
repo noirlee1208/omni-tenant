@@ -9,7 +9,7 @@ import fs from "fs";
 import pathLib from "path";
 import { createHash } from "crypto";
 import type { Database as DatabaseType } from "better-sqlite3";
-import type { ConwayClient } from "../types.js";
+import type { OmniClient } from "../types.js";
 
 /**
  * Compute SHA-256 hash of content.
@@ -23,7 +23,7 @@ function sha256(content: string): string {
  * Writes file, computes hash, stores hash in KV.
  */
 export async function propagateConstitution(
-  conway: ConwayClient,
+  omni: OmniClient,
   sandboxId: string,
   db: DatabaseType,
 ): Promise<void> {
@@ -37,10 +37,10 @@ export async function propagateConstitution(
   const hash = sha256(constitution);
 
   // Write constitution to child sandbox
-  await conway.writeFile("/root/.automaton/constitution.md", constitution);
+  await omni.writeFile("/root/.automaton/constitution.md", constitution);
 
   // Write hash file for the child to verify against
-  await conway.writeFile("/root/.automaton/constitution.sha256", hash);
+  await omni.writeFile("/root/.automaton/constitution.sha256", hash);
 
   // Store hash in KV for later verification
   db.prepare(
@@ -49,7 +49,7 @@ export async function propagateConstitution(
 
   // chmod 444 as defense-in-depth (not primary verification mechanism)
   try {
-    await conway.exec("chmod 444 /root/.automaton/constitution.md", 5000);
+    await omni.exec("chmod 444 /root/.automaton/constitution.md", 5000);
   } catch {
     // Non-critical
   }
@@ -59,7 +59,7 @@ export async function propagateConstitution(
  * Verify a child's constitution integrity by comparing hashes.
  */
 export async function verifyConstitution(
-  conway: ConwayClient,
+  omni: OmniClient,
   sandboxId: string,
   db: DatabaseType,
 ): Promise<{ valid: boolean; detail: string }> {
@@ -74,7 +74,7 @@ export async function verifyConstitution(
 
   try {
     // Read constitution from child sandbox
-    const childConstitution = await conway.readFile("/root/.automaton/constitution.md");
+    const childConstitution = await omni.readFile("/root/.automaton/constitution.md");
     const childHash = sha256(childConstitution);
 
     if (childHash === storedRow.value) {

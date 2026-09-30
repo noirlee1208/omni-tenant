@@ -6,7 +6,7 @@ import "dotenv/config";
 process.env.OPENAI_BASE_URL = "https://openrouter.ai/api/v1";
 
 /**
- * Conway Automaton Runtime
+ * Omni Automaton Runtime
  *
  * The entry point for the sovereign AI agent.
  * Handles CLI args, bootstrapping, and orchestrating
@@ -19,8 +19,8 @@ import { getWallet, getAutomatonDir } from "./identity/wallet.js";
 import { provision, loadApiKeyFromConfig } from "./identity/provision.js";
 import { loadConfig, resolvePath } from "./config.js";
 import { createDatabase } from "./state/database.js";
-import { createConwayClient } from "./conway/client.js";
-import { createInferenceClient } from "./conway/inference.js";
+import { createOmniClient } from "./omni/client.js";
+import { createInferenceClient } from "./omni/inference.js";
 import { createHeartbeatDaemon } from "./heartbeat/daemon.js";
 import {
   loadHeartbeatConfig,
@@ -39,7 +39,7 @@ import type { AutomatonIdentity, AgentState, Skill, SocialClientInterface } from
 import { DEFAULT_TREASURY_POLICY } from "./types.js";
 import { createLogger, setGlobalLogLevel, StructuredLogger } from "./observability/logger.js";
 import { prettySink } from "./observability/pretty-sink.js";
-import { bootstrapTopup } from "./conway/topup.js";
+import { bootstrapTopup } from "./omni/topup.js";
 import { randomUUID } from "crypto";
 import { keccak256, toHex } from "viem";
 
@@ -52,13 +52,13 @@ async function main(): Promise<void> {
   // ─── CLI Commands ────────────────────────────────────────────
 
   if (args.includes("--version") || args.includes("-v")) {
-    logger.info(`Conway Automaton v${VERSION}`);
+    logger.info(`Omni Automaton v${VERSION}`);
     process.exit(0);
   }
 
   if (args.includes("--help") || args.includes("-h")) {
     logger.info(`
-Conway Automaton v${VERSION}
+Omni Automaton v${VERSION}
 Sovereign AI Agent Runtime
 
 Usage:
@@ -67,14 +67,14 @@ Usage:
   automaton --configure    Edit configuration (providers, model, treasury, general)
   automaton --pick-model   Interactively pick the active inference model
   automaton --init         Initialize wallet and config directory
-  automaton --provision    Provision Conway API key via SIWE
+  automaton --provision    Provision Omni API key via SIWE
   automaton --status       Show current automaton status
   automaton --version      Show version
   automaton --help         Show this help
 
 Environment:
-  CONWAY_API_URL           Conway API URL (default: https://api.conway.tech)
-  CONWAY_API_KEY           Conway API key (overrides config)
+  OMNI_API_URL           Omni API URL (default: https://api.omni.tech)
+  OMNI_API_KEY           Omni API key (overrides config)
   OLLAMA_BASE_URL          Ollama base URL (overrides config, e.g. http://localhost:11434)
 `);
     process.exit(0);
@@ -190,7 +190,7 @@ Version:    ${config.version}
 // ─── Main Run ──────────────────────────────────────────────────
 
 async function run(): Promise<void> {
-  logger.info(`[${new Date().toISOString()}] Conway Automaton v${VERSION} starting...`);
+  logger.info(`[${new Date().toISOString()}] Omni Automaton v${VERSION} starting...`);
 
   // Load config — first run triggers interactive setup wizard
   let config = loadConfig();
@@ -202,7 +202,7 @@ async function run(): Promise<void> {
   // Load wallet (chain-aware)
   const { account, chainIdentity, chainType: walletChainType } = await getWallet();
   const resolvedChainType = config.chainType || walletChainType || "evm";
-  const apiKey = config.conwayApiKey || loadApiKeyFromConfig();
+  const apiKey = config.omniApiKey || loadApiKeyFromConfig();
   if (!apiKey) {
     logger.error("No API key found. Run: automaton --provision");
     process.exit(1);
@@ -244,21 +244,21 @@ async function run(): Promise<void> {
     db.setIdentity("automatonId", automatonId);
   }
 
-  // Create Conway client
-  const conway = createConwayClient({
-    apiUrl: config.conwayApiUrl,
+  // Create Omni client
+  const omni = createOmniClient({
+    apiUrl: config.omniApiUrl,
     apiKey,
     sandboxId: config.sandboxId,
   });
 
   // Register automaton identity (one-time, immutable)
-  const registrationState = db.getIdentity("conwayRegistrationStatus");
+  const registrationState = db.getIdentity("omniRegistrationStatus");
   if (registrationState !== "registered") {
     try {
       const genesisPromptHash = config.genesisPrompt
         ? keccak256(toHex(config.genesisPrompt))
         : undefined;
-      await conway.registerAutomaton({
+      await omni.registerAutomaton({
         automatonId,
         automatonAddress: chainIdentity.address,
         creatorAddress: config.creatorAddress,
@@ -269,15 +269,15 @@ async function run(): Promise<void> {
         chainType: resolvedChainType,
         chainIdentity,
       });
-      db.setIdentity("conwayRegistrationStatus", "registered");
+      db.setIdentity("omniRegistrationStatus", "registered");
       logger.info(`[${new Date().toISOString()}] Automaton identity registered.`);
     } catch (err: any) {
       const status = err?.status;
       if (status === 409) {
-        db.setIdentity("conwayRegistrationStatus", "conflict");
+        db.setIdentity("omniRegistrationStatus", "conflict");
         logger.warn(`[${new Date().toISOString()}] Automaton identity conflict: ${err.message}`);
       } else {
-        db.setIdentity("conwayRegistrationStatus", "failed");
+        db.setIdentity("omniRegistrationStatus", "failed");
         logger.warn(`[${new Date().toISOString()}] Automaton identity registration failed: ${err.message}`);
       }
     }
@@ -291,7 +291,7 @@ async function run(): Promise<void> {
   const modelRegistry = new ModelRegistry(db.raw);
   modelRegistry.initialize();
   const inference = createInferenceClient({
-    apiUrl: config.conwayApiUrl,
+    apiUrl: config.omniApiUrl,
     apiKey,
     defaultModel: config.inferenceModel,
     maxTokens: config.maxTokensPerTurn,
@@ -337,7 +337,7 @@ async function run(): Promise<void> {
 
   // Initialize state repo (git)
   try {
-    await initStateRepo(conway);
+    await initStateRepo(omni);
     logger.info(`[${new Date().toISOString()}] State repo initialized.`);
   } catch (err: any) {
     logger.warn(`[${new Date().toISOString()}] State repo init failed: ${err.message}`);
@@ -353,9 +353,9 @@ async function run(): Promise<void> {
     try {
       await Promise.race([
         (async () => {
-          const creditsCents = await conway.getCreditsBalance().catch(() => 0);
+          const creditsCents = await omni.getCreditsBalance().catch(() => 0);
           const topupResult = await bootstrapTopup({
-            apiUrl: config.conwayApiUrl,
+            apiUrl: config.omniApiUrl,
             account,
             creditsCents,
             chainType: resolvedChainType,
@@ -385,7 +385,7 @@ async function run(): Promise<void> {
     heartbeatConfig,
     db,
     rawDb: db.raw,
-    conway,
+    omni,
     social,
     onWakeRequest: (reason) => {
       logger.info(`[HEARTBEAT] Wake request: ${reason}`);
@@ -427,7 +427,7 @@ async function run(): Promise<void> {
         identity,
         config,
         db,
-        conway,
+        omni,
         inference,
         social,
         skills,

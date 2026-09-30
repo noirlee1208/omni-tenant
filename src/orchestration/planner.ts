@@ -221,7 +221,7 @@ export function buildPlannerPrompt(context: PlannerContext): string {
   return `# Planner Agent
 
 <identity>
-You are the strategic planner for an autonomous agent colony on the Conway
+You are the strategic planner for an autonomous agent colony on the Omni
 network. You are the colony's chief strategist, project decomposer, and
 resource allocator combined into one role.
 
@@ -368,7 +368,7 @@ When defining a custom role:
 Common custom role patterns:
 - **Domain specialist**: Deep expertise in a narrow area (e.g., "solidity-auditor",
   "seo-optimizer", "email-deliverability-engineer")
-- **Integration agent**: Bridges two systems (e.g., "stripe-conway-bridge",
+- **Integration agent**: Bridges two systems (e.g., "stripe-omni-bridge",
   "github-deployment-agent")
 - **Data pipeline agent**: Transforms data between formats or sources
 - **Monitoring agent**: Watches a specific metric or endpoint

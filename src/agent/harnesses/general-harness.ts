@@ -129,7 +129,7 @@ When calling task_done, provide:
             return `Blocked: ${forbidden?.description ?? "Forbidden command pattern detected"}`;
           }
           try {
-            const result = await this.context.conway.exec(command, timeoutMs);
+            const result = await this.context.omni.exec(command, timeoutMs);
             return formatExecResult(result.stdout ?? "", result.stderr ?? "");
           } catch {
             return localExec(command, timeoutMs);
@@ -158,7 +158,7 @@ When calling task_done, provide:
             return `Blocked: cannot write to protected file "${filePath}"`;
           }
           try {
-            await this.context.conway.writeFile(confined, content);
+            await this.context.omni.writeFile(confined, content);
             return `Wrote ${content.length} bytes to ${confined}`;
           } catch {
             try {
@@ -191,7 +191,7 @@ When calling task_done, provide:
             return confined.error;
           }
           try {
-            const content = await this.context.conway.readFile(confined);
+            const content = await this.context.omni.readFile(confined);
             return content.slice(0, MAX_READ_SIZE) || "(empty file)";
           } catch {
             try {

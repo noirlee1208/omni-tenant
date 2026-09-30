@@ -9,7 +9,7 @@ import type { PlannerOutput } from "../../orchestration/planner.js";
 import type { TaskNode, TaskResult } from "../../orchestration/task-graph.js";
 import { getTaskById } from "../../state/database.js";
 import { createInMemoryDb } from "./test-db.js";
-import { createTestConfig, createTestIdentity, MockConwayClient } from "../mocks.js";
+import { createTestConfig, createTestIdentity, MockOmniClient } from "../mocks.js";
 
 class SuccessHarness implements AgentHarness {
   readonly id = "success";
@@ -148,7 +148,7 @@ describe("orchestration/LocalWorkerPool harness integration", () => {
   function createPool(maxTurns?: number): LocalWorkerPool {
     return new LocalWorkerPool({
       db,
-      conway: new MockConwayClient(),
+      omni: new MockOmniClient(),
       inference: { chat: async () => ({ content: "done" }) },
       maxTurns,
       harnessRegistry: registry,
@@ -297,7 +297,7 @@ describe("orchestration/LocalWorkerPool harness integration", () => {
     try {
       const pool = new LocalWorkerPool({
         db,
-        conway: new MockConwayClient(),
+        omni: new MockOmniClient(),
         inference: workerInference as any,
         harnessRegistry: registry,
         identity: createTestIdentity(),

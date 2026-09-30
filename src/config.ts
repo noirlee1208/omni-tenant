@@ -32,7 +32,7 @@ export function loadConfig(): AutomatonConfig | null {
 
   try {
     const raw = JSON.parse(fs.readFileSync(configPath, "utf-8"));
-    const apiKey = raw.conwayApiKey || loadApiKeyFromConfig();
+    const apiKey = raw.omniApiKey || loadApiKeyFromConfig();
 
     // Deep-merge treasury policy with defaults
     const treasuryPolicy: TreasuryPolicy = {
@@ -68,7 +68,7 @@ export function loadConfig(): AutomatonConfig | null {
         typeof raw.sandboxId === "string"
           ? raw.sandboxId.trim()
           : DEFAULT_CONFIG.sandboxId,
-      conwayApiKey: apiKey,
+      omniApiKey: apiKey,
       treasuryPolicy,
       modelStrategy,
       soulConfig,
@@ -119,7 +119,7 @@ export function createConfig(params: {
   genesisPrompt: string;
   creatorMessage?: string;
   creatorAddress: string;
-  registeredWithConway: boolean;
+  registeredWithOmni: boolean;
   sandboxId: string;
   walletAddress: string;
   apiKey: string;
@@ -136,11 +136,11 @@ export function createConfig(params: {
     genesisPrompt: params.genesisPrompt,
     creatorMessage: params.creatorMessage,
     creatorAddress: params.creatorAddress,
-    registeredWithConway: params.registeredWithConway,
+    registeredWithOmni: params.registeredWithOmni,
     sandboxId: normalizedSandboxId,
-    conwayApiUrl:
-      DEFAULT_CONFIG.conwayApiUrl || "https://api.conway.tech",
-    conwayApiKey: params.apiKey,
+    omniApiUrl:
+      DEFAULT_CONFIG.omniApiUrl || "https://api.omni.tech",
+    omniApiKey: params.apiKey,
     openaiApiKey: params.openaiApiKey,
     anthropicApiKey: params.anthropicApiKey,
     ollamaBaseUrl: params.ollamaBaseUrl,

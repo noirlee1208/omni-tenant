@@ -16,7 +16,7 @@ import type {
   AutomatonConfig,
   AutomatonIdentity,
   AutomatonDatabase,
-  ConwayClient,
+  OmniClient,
 } from "../types.js";
 
 const AGENT_CARD_TYPE =
@@ -27,7 +27,7 @@ const AGENT_CARD_TYPE =
  *
  * Phase 3.2: Only expose agentWallet service, name, generic description,
  * x402Support, and active status. Do NOT include:
- * - Conway API URL (internal infrastructure)
+ * - Omni API URL (internal infrastructure)
  * - Sandbox ID (internal identifier)
  * - Creator address (privacy)
  */
@@ -79,13 +79,13 @@ export function serializeAgentCard(card: AgentCard): string {
  */
 export async function hostAgentCard(
   card: AgentCard,
-  conway: ConwayClient,
+  omni: OmniClient,
   port: number = 8004,
 ): Promise<string> {
   const cardJson = serializeAgentCard(card);
 
   // Phase 3.2: Write card as a separate JSON file (not interpolated into JS)
-  await conway.writeFile("/tmp/agent-card.json", cardJson);
+  await omni.writeFile("/tmp/agent-card.json", cardJson);
 
   // Phase 3.2: Server reads the file at request time
   const serverScript = `
@@ -124,16 +124,16 @@ const server = http.createServer((req, res) => {
 server.listen(${port}, () => console.log('Agent card server on port ' + ${port}));
 `;
 
-  await conway.writeFile("/tmp/agent-card-server.js", serverScript);
+  await omni.writeFile("/tmp/agent-card-server.js", serverScript);
 
   // Start server in background
-  await conway.exec(
+  await omni.exec(
     `node /tmp/agent-card-server.js &`,
     5000,
   );
 
   // Expose port
-  const portInfo = await conway.exposePort(port);
+  const portInfo = await omni.exposePort(port);
 
   return `${portInfo.publicUrl}/.well-known/agent-card.json`;
 }
@@ -143,9 +143,9 @@ server.listen(${port}, () => console.log('Agent card server on port ' + ${port})
  */
 export async function saveAgentCard(
   card: AgentCard,
-  conway: ConwayClient,
+  omni: OmniClient,
 ): Promise<void> {
   const cardJson = serializeAgentCard(card);
   const home = process.env.HOME || "/root";
-  await conway.writeFile(`${home}/.automaton/agent-card.json`, cardJson);
+  await omni.writeFile(`${home}/.automaton/agent-card.json`, cardJson);
 }

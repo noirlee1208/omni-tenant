@@ -7,7 +7,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { executeFundingStrategies } from "../survival/funding.js";
 import {
-  MockConwayClient,
+  MockOmniClient,
   createTestDb,
   createTestIdentity,
   createTestConfig,
@@ -16,12 +16,12 @@ import type { AutomatonDatabase } from "../types.js";
 
 describe("executeFundingStrategies", () => {
   let db: AutomatonDatabase;
-  let conway: MockConwayClient;
+  let omni: MockOmniClient;
 
   beforeEach(() => {
     db = createTestDb();
-    conway = new MockConwayClient();
-    conway.creditsCents = 5; // low balance
+    omni = new MockOmniClient();
+    omni.creditsCents = 5; // low balance
   });
 
   afterEach(() => {
@@ -38,7 +38,7 @@ describe("executeFundingStrategies", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
     );
     expect(deadAttempts.length).toBe(1);
     expect(deadAttempts[0].strategy).toBe("desperate_plea");
@@ -50,7 +50,7 @@ describe("executeFundingStrategies", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
     );
     expect(lowAttempts.length).toBe(1);
     expect(lowAttempts[0].strategy).toBe("polite_creator_notification");
@@ -66,7 +66,7 @@ describe("executeFundingStrategies", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
     );
     expect(criticalAttempts.length).toBe(1);
     expect(criticalAttempts[0].strategy).toBe("urgent_local_notice");
@@ -77,7 +77,7 @@ describe("executeFundingStrategies", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
     );
     expect(lowAttempts.length).toBe(1);
     expect(lowAttempts[0].strategy).toBe("polite_creator_notification");
@@ -88,11 +88,11 @@ describe("executeFundingStrategies", () => {
     const config = createTestConfig();
 
     // First dead-tier call fires
-    const first = await executeFundingStrategies("dead", identity, config, db, conway);
+    const first = await executeFundingStrategies("dead", identity, config, db, omni);
     expect(first.length).toBe(1);
 
     // Immediate second dead-tier call should be suppressed (2h cooldown)
-    const second = await executeFundingStrategies("dead", identity, config, db, conway);
+    const second = await executeFundingStrategies("dead", identity, config, db, omni);
     expect(second.length).toBe(0);
   });
 });

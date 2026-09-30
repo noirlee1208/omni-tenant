@@ -13,7 +13,7 @@ import type {
   AutomatonDatabase,
   ChildAutomaton,
   AutomatonConfig,
-  ConwayClient,
+  OmniClient,
 } from "../types.js";
 import type { ChildLifecycle } from "./lifecycle.js";
 import type { ChildHealthMonitor } from "./health.js";
@@ -133,7 +133,7 @@ export async function pruneDeadChildren(
  * Concurrency limited to 3 simultaneous checks.
  */
 export async function refreshChildrenStatus(
-  conway: ConwayClient,
+  omni: OmniClient,
   db: AutomatonDatabase,
   healthMonitor?: ChildHealthMonitor,
 ): Promise<void> {
@@ -152,7 +152,7 @@ export async function refreshChildrenStatus(
     await Promise.all(
       batch.map(async (child) => {
         try {
-          const result = await conway.exec("echo alive", 10_000);
+          const result = await omni.exec("echo alive", 10_000);
           if (result.exitCode !== 0) {
             db.updateChildStatus(child.id, "unknown" as any);
           }

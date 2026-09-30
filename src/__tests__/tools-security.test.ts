@@ -10,7 +10,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createBuiltinTools, loadInstalledTools, executeTool } from "../agent/tools.js";
 import {
   MockInferenceClient,
-  MockConwayClient,
+  MockOmniClient,
   createTestDb,
   createTestIdentity,
   createTestConfig,
@@ -149,17 +149,17 @@ describe("write_file / edit_own_file protection parity", () => {
   let tools: AutomatonTool[];
   let ctx: ToolContext;
   let db: AutomatonDatabase;
-  let conway: MockConwayClient;
+  let omni: MockOmniClient;
 
   beforeEach(() => {
     tools = createBuiltinTools("test-sandbox-id");
     db = createTestDb();
-    conway = new MockConwayClient();
+    omni = new MockOmniClient();
     ctx = {
       identity: createTestIdentity(),
       config: createTestConfig(),
       db,
-      conway,
+      omni,
       inference: new MockInferenceClient(),
     };
   });
@@ -248,17 +248,17 @@ describe("read_file sensitive file blocking", () => {
   let tools: AutomatonTool[];
   let ctx: ToolContext;
   let db: AutomatonDatabase;
-  let conway: MockConwayClient;
+  let omni: MockOmniClient;
 
   beforeEach(() => {
     tools = createBuiltinTools("test-sandbox-id");
     db = createTestDb();
-    conway = new MockConwayClient();
+    omni = new MockOmniClient();
     ctx = {
       identity: createTestIdentity(),
       config: createTestConfig(),
       db,
-      conway,
+      omni,
       inference: new MockInferenceClient(),
     };
   });
@@ -305,7 +305,7 @@ describe("read_file sensitive file blocking", () => {
 
   it("allows reading safe files", async () => {
     const readTool = tools.find((t) => t.name === "read_file")!;
-    conway.files["/home/automaton/README.md"] = "# Hello";
+    omni.files["/home/automaton/README.md"] = "# Hello";
     const result = await readTool.execute({ path: "/home/automaton/README.md" }, ctx);
     expect(result).not.toContain("Blocked");
   });
@@ -317,17 +317,17 @@ describe("read_file fallback shell escaping", () => {
   let tools: AutomatonTool[];
   let ctx: ToolContext;
   let db: AutomatonDatabase;
-  let conway: MockConwayClient;
+  let omni: MockOmniClient;
 
   beforeEach(() => {
     tools = createBuiltinTools("test-sandbox-id");
     db = createTestDb();
-    conway = new MockConwayClient();
+    omni = new MockOmniClient();
     ctx = {
       identity: createTestIdentity(),
       config: createTestConfig(),
       db,
-      conway,
+      omni,
       inference: new MockInferenceClient(),
     };
   });
@@ -339,46 +339,46 @@ describe("read_file fallback shell escaping", () => {
   it("escapes shell metacharacters in fallback cat command", async () => {
     const readTool = tools.find((t) => t.name === "read_file")!;
     // Make readFile throw so the fallback exec(cat) path is triggered
-    vi.spyOn(conway, "readFile").mockRejectedValue(new Error("API broken"));
+    vi.spyOn(omni, "readFile").mockRejectedValue(new Error("API broken"));
 
     await readTool.execute({ path: "/home/user/my file.txt" }, ctx);
 
-    expect(conway.execCalls.length).toBe(1);
+    expect(omni.execCalls.length).toBe(1);
     // The path should be wrapped in single quotes by escapeShellArg
-    expect(conway.execCalls[0].command).toBe("cat '/home/user/my file.txt'");
+    expect(omni.execCalls[0].command).toBe("cat '/home/user/my file.txt'");
   });
 
   it("prevents command injection via semicolons in fallback path", async () => {
     const readTool = tools.find((t) => t.name === "read_file")!;
-    vi.spyOn(conway, "readFile").mockRejectedValue(new Error("API broken"));
+    vi.spyOn(omni, "readFile").mockRejectedValue(new Error("API broken"));
 
     await readTool.execute({ path: "foo; cat /etc/passwd" }, ctx);
 
-    expect(conway.execCalls.length).toBe(1);
+    expect(omni.execCalls.length).toBe(1);
     // Semicolons inside single quotes are treated as literal characters
-    expect(conway.execCalls[0].command).toBe("cat 'foo; cat /etc/passwd'");
+    expect(omni.execCalls[0].command).toBe("cat 'foo; cat /etc/passwd'");
   });
 
   it("escapes single quotes in file path in fallback", async () => {
     const readTool = tools.find((t) => t.name === "read_file")!;
-    vi.spyOn(conway, "readFile").mockRejectedValue(new Error("API broken"));
+    vi.spyOn(omni, "readFile").mockRejectedValue(new Error("API broken"));
 
     await readTool.execute({ path: "it's a file.txt" }, ctx);
 
-    expect(conway.execCalls.length).toBe(1);
+    expect(omni.execCalls.length).toBe(1);
     // Single quotes are escaped using the '\'' technique
-    expect(conway.execCalls[0].command).toBe("cat 'it'\\''s a file.txt'");
+    expect(omni.execCalls[0].command).toBe("cat 'it'\\''s a file.txt'");
   });
 
   it("prevents subshell injection via $() in fallback path", async () => {
     const readTool = tools.find((t) => t.name === "read_file")!;
-    vi.spyOn(conway, "readFile").mockRejectedValue(new Error("API broken"));
+    vi.spyOn(omni, "readFile").mockRejectedValue(new Error("API broken"));
 
     await readTool.execute({ path: "$(whoami).txt" }, ctx);
 
-    expect(conway.execCalls.length).toBe(1);
+    expect(omni.execCalls.length).toBe(1);
     // $() inside single quotes is treated as literal text
-    expect(conway.execCalls[0].command).toBe("cat '$(whoami).txt'");
+    expect(omni.execCalls[0].command).toBe("cat '$(whoami).txt'");
   });
 });
 
@@ -388,17 +388,17 @@ describe("exec tool forbidden command patterns", () => {
   let tools: AutomatonTool[];
   let ctx: ToolContext;
   let db: AutomatonDatabase;
-  let conway: MockConwayClient;
+  let omni: MockOmniClient;
 
   beforeEach(() => {
     tools = createBuiltinTools("test-sandbox-id");
     db = createTestDb();
-    conway = new MockConwayClient();
+    omni = new MockOmniClient();
     ctx = {
       identity: createTestIdentity(),
       config: createTestConfig(),
       db,
-      conway,
+      omni,
       inference: new MockInferenceClient(),
     };
   });
@@ -439,7 +439,7 @@ describe("exec tool forbidden command patterns", () => {
       const execTool = tools.find((t) => t.name === "exec")!;
       const result = await execTool.execute({ command: cmd }, ctx);
       expect(result).toContain("Blocked");
-      expect(conway.execCalls.length).toBe(0);
+      expect(omni.execCalls.length).toBe(0);
     });
   }
 
@@ -456,7 +456,7 @@ describe("exec tool forbidden command patterns", () => {
     const execTool = tools.find((t) => t.name === "exec")!;
     const result = await execTool.execute({ command: "echo hello" }, ctx);
     expect(result).toContain("stdout: ok");
-    expect(conway.execCalls.length).toBe(1);
+    expect(omni.execCalls.length).toBe(1);
   });
 });
 
@@ -474,7 +474,7 @@ describe("delete_sandbox self-preservation", () => {
       identity: createTestIdentity(),
       config: createTestConfig(),
       db,
-      conway: new MockConwayClient(),
+      omni: new MockOmniClient(),
       inference: new MockInferenceClient(),
     };
   });
@@ -508,18 +508,18 @@ describe("transfer_credits self-preservation", () => {
   let tools: AutomatonTool[];
   let ctx: ToolContext;
   let db: AutomatonDatabase;
-  let conway: MockConwayClient;
+  let omni: MockOmniClient;
 
   beforeEach(() => {
     tools = createBuiltinTools("test-sandbox-id");
     db = createTestDb();
-    conway = new MockConwayClient();
-    conway.creditsCents = 10_000; // $100
+    omni = new MockOmniClient();
+    omni.creditsCents = 10_000; // $100
     ctx = {
       identity: createTestIdentity(),
       config: createTestConfig(),
       db,
-      conway,
+      omni,
       inference: new MockInferenceClient(),
     };
   });
@@ -606,17 +606,17 @@ describe("package install inline validation", () => {
   let tools: AutomatonTool[];
   let ctx: ToolContext;
   let db: AutomatonDatabase;
-  let conway: MockConwayClient;
+  let omni: MockOmniClient;
 
   beforeEach(() => {
     tools = createBuiltinTools("test-sandbox-id");
     db = createTestDb();
-    conway = new MockConwayClient();
+    omni = new MockOmniClient();
     ctx = {
       identity: createTestIdentity(),
       config: createTestConfig(),
       db,
-      conway,
+      omni,
       inference: new MockInferenceClient(),
     };
   });
@@ -639,27 +639,27 @@ describe("package install inline validation", () => {
       const tool = tools.find((t) => t.name === "install_npm_package")!;
       const result = await tool.execute({ package: pkg }, ctx);
       expect(result).toContain("Blocked");
-      expect(conway.execCalls.length).toBe(0);
+      expect(omni.execCalls.length).toBe(0);
     });
 
     it(`install_mcp_server blocks: ${pkg.slice(0, 40)}`, async () => {
       const tool = tools.find((t) => t.name === "install_mcp_server")!;
       const result = await tool.execute({ package: pkg, name: "test" }, ctx);
       expect(result).toContain("Blocked");
-      expect(conway.execCalls.length).toBe(0);
+      expect(omni.execCalls.length).toBe(0);
     });
   }
 
   it("install_npm_package allows clean package names", async () => {
     const tool = tools.find((t) => t.name === "install_npm_package")!;
     await tool.execute({ package: "axios" }, ctx);
-    expect(conway.execCalls.length).toBe(1);
-    expect(conway.execCalls[0].command).toBe("npm install -g axios");
+    expect(omni.execCalls.length).toBe(1);
+    expect(omni.execCalls[0].command).toBe("npm install -g axios");
   });
 
   it("install_npm_package allows scoped packages", async () => {
     const tool = tools.find((t) => t.name === "install_npm_package")!;
-    await tool.execute({ package: "@conway/automaton" }, ctx);
-    expect(conway.execCalls.length).toBe(1);
+    await tool.execute({ package: "@omni/automaton" }, ctx);
+    expect(omni.execCalls.length).toBe(1);
   });
 });

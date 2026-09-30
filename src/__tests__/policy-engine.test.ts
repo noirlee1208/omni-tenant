@@ -21,7 +21,7 @@ import {
   createTestDb,
   createTestIdentity,
   createTestConfig,
-  MockConwayClient,
+  MockOmniClient,
   MockInferenceClient,
 } from "./mocks.js";
 import type {
@@ -587,7 +587,7 @@ describe("Tool call IDs", () => {
     const tools = createBuiltinTools("test-sandbox-id");
     const identity = createTestIdentity();
     const config = createTestConfig();
-    const conway = new MockConwayClient();
+    const omni = new MockOmniClient();
     const appDb = createTestDb();
     const inference = new MockInferenceClient([]);
 
@@ -595,7 +595,7 @@ describe("Tool call IDs", () => {
       identity,
       config,
       db: appDb,
-      conway,
+      omni,
       inference,
     };
 
@@ -643,14 +643,14 @@ describe("executeTool with PolicyEngine", () => {
     const tools = createBuiltinTools("test-sandbox-id");
     const identity = createTestIdentity();
     const config = createTestConfig();
-    const conway = new MockConwayClient();
+    const omni = new MockOmniClient();
     const inference = new MockInferenceClient([]);
 
     const context: ToolContext = {
       identity,
       config,
       db: appDb,
-      conway,
+      omni,
       inference,
     };
 
@@ -678,14 +678,14 @@ describe("executeTool with PolicyEngine", () => {
     const tools = createBuiltinTools("test-sandbox-id");
     const identity = createTestIdentity();
     const config = createTestConfig();
-    const conway = new MockConwayClient();
+    const omni = new MockOmniClient();
     const inference = new MockInferenceClient([]);
 
     const context: ToolContext = {
       identity,
       config,
       db: appDb,
-      conway,
+      omni,
       inference,
     };
 
@@ -702,14 +702,14 @@ describe("executeTool with PolicyEngine", () => {
     const tools = createBuiltinTools("test-sandbox-id");
     const identity = createTestIdentity();
     const config = createTestConfig();
-    const conway = new MockConwayClient();
+    const omni = new MockOmniClient();
     const inference = new MockInferenceClient([]);
 
     const context: ToolContext = {
       identity,
       config,
       db: appDb,
-      conway,
+      omni,
       inference,
     };
 

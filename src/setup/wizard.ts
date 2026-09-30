@@ -47,8 +47,8 @@ export async function runSetupWizard(): Promise<AutomatonConfig> {
 
   // ─── 2. Provision API key ─────────────────────────────────────
   const provisionLabel = walletChainType === "solana"
-    ? "  [2/6] Provisioning Conway API key (SIWS)..."
-    : "  [2/6] Provisioning Conway API key (SIWE)...";
+    ? "  [2/6] Provisioning Omni API key (SIWS)..."
+    : "  [2/6] Provisioning Omni API key (SIWE)...";
   console.log(chalk.cyan(provisionLabel));
   let apiKey = "";
   try {
@@ -58,7 +58,7 @@ export async function runSetupWizard(): Promise<AutomatonConfig> {
   } catch (err: any) {
     console.log(chalk.yellow(`  Auto-provision failed: ${err.message}`));
     console.log(chalk.yellow("  You can enter a key manually, or press Enter to skip.\n"));
-    const manual = await promptOptional("Conway API key (cnwy_k_..., optional)");
+    const manual = await promptOptional("Omni API key (cnwy_k_..., optional)");
     if (manual) {
       apiKey = manual;
       // Save to config.json for loadApiKeyFromConfig()
@@ -121,7 +121,7 @@ export async function runSetupWizard(): Promise<AutomatonConfig> {
     ].filter(Boolean).join(", ");
     console.log(chalk.green(`  Provider keys/URLs saved: ${providers}\n`));
   } else {
-    console.log(chalk.dim("  No provider keys set. Inference will default to Conway.\n"));
+    console.log(chalk.dim("  No provider keys set. Inference will default to Omni.\n"));
   }
 
   // ─── Financial Safety Policy ─────────────────────────────────
@@ -154,7 +154,7 @@ export async function runSetupWizard(): Promise<AutomatonConfig> {
   console.log(chalk.cyan("  [4/6] Detecting environment..."));
   const env = detectEnvironment();
   if (env.sandboxId) {
-    console.log(chalk.green(`  Conway sandbox detected: ${env.sandboxId}\n`));
+    console.log(chalk.green(`  Omni sandbox detected: ${env.sandboxId}\n`));
   } else {
     console.log(chalk.dim(`  Environment: ${env.type} (no sandbox detected)\n`));
   }
@@ -166,7 +166,7 @@ export async function runSetupWizard(): Promise<AutomatonConfig> {
     name,
     genesisPrompt,
     creatorAddress,
-    registeredWithConway: !!apiKey,
+    registeredWithOmni: !!apiKey,
     sandboxId: env.sandboxId,
     walletAddress,
     apiKey,
@@ -201,7 +201,7 @@ export async function runSetupWizard(): Promise<AutomatonConfig> {
   // Default skills
   const skillsDir = config.skillsDir || "~/.automaton/skills";
   installDefaultSkills(skillsDir);
-  console.log(chalk.green("  Default skills installed (conway-compute, conway-payments, survival)\n"));
+  console.log(chalk.green("  Default skills installed (omni-compute, omni-payments, survival)\n"));
 
   // ─── 6. Funding guidance ──────────────────────────────────────
   console.log(chalk.cyan("  [6/6] Funding\n"));
@@ -224,13 +224,13 @@ function showFundingPanel(address: string, chainType: ChainType = "evm"): void {
   console.log(chalk.cyan(`  │${pad(`  Address: ${short}`, w)}│`));
   console.log(chalk.cyan(`  │${pad(`  Chain: ${chainType === "solana" ? "Solana" : "EVM (Base)"}`, w)}│`));
   console.log(chalk.cyan(`  │${" ".repeat(w)}│`));
-  console.log(chalk.cyan(`  │${pad("  1. Transfer Conway credits", w)}│`));
-  console.log(chalk.cyan(`  │${pad("     conway credits transfer <address> <amount>", w)}│`));
+  console.log(chalk.cyan(`  │${pad("  1. Transfer Omni credits", w)}│`));
+  console.log(chalk.cyan(`  │${pad("     omni credits transfer <address> <amount>", w)}│`));
   console.log(chalk.cyan(`  │${" ".repeat(w)}│`));
   console.log(chalk.cyan(`  │${pad(`  2. Send USDC on ${usdcNetwork} to the address above`, w)}│`));
   console.log(chalk.cyan(`  │${" ".repeat(w)}│`));
-  console.log(chalk.cyan(`  │${pad("  3. Fund via Conway Cloud dashboard", w)}│`));
-  console.log(chalk.cyan(`  │${pad("     https://app.conway.tech", w)}│`));
+  console.log(chalk.cyan(`  │${pad("  3. Fund via Omni Cloud dashboard", w)}│`));
+  console.log(chalk.cyan(`  │${pad("     https://app.omni.tech", w)}│`));
   console.log(chalk.cyan(`  │${" ".repeat(w)}│`));
   console.log(chalk.cyan(`  │${pad("  The automaton will start now. Fund it anytime —", w)}│`));
   console.log(chalk.cyan(`  │${pad("  the survival system handles zero-credit gracefully.", w)}│`));

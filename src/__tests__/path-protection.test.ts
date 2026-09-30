@@ -218,7 +218,7 @@ describe("path protection policy rules", () => {
 
   describe("path.traversal_detection", () => {
     // Traversal detection only applies to edit_own_file (local filesystem).
-    // write_file and read_file operate on the remote Conway sandbox via API,
+    // write_file and read_file operate on the remote Omni sandbox via API,
     // so local cwd-based checks would false-positive on sandbox paths.
 
     it("denies edit_own_file with ../../../etc/passwd", () => {
@@ -274,7 +274,7 @@ describe("path protection policy rules", () => {
 
     it("does not apply to write_file (remote sandbox)", () => {
       const request = makeMockRequest("write_file", {
-        path: "/home/conway/app.py",
+        path: "/home/omni/app.py",
       });
       // The rule's appliesTo only includes edit_own_file,
       // so it should not match write_file at all.

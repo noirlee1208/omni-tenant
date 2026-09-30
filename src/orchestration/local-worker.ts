@@ -18,7 +18,7 @@ import type {
   AutomatonConfig,
   AutomatonIdentity,
   AutomatonTool,
-  ConwayClient,
+  OmniClient,
   InputSource,
   SpendTrackerInterface,
   ToolContext,
@@ -32,7 +32,7 @@ const DEFAULT_ALLOWED_EDIT_ROOT = process.cwd();
 interface LocalWorkerConfig {
   db: Database;
   inference: WorkerInferenceClient;
-  conway: ConwayClient;
+  omni: OmniClient;
   maxTurns?: number;
   harnessRegistry: HarnessRegistry;
   identity: AutomatonIdentity;
@@ -110,7 +110,7 @@ export class LocalWorkerPool {
       identity: workerIdentity,
       config: this.config.config,
       db: this.config.db,
-      conway: this.config.conway,
+      omni: this.config.omni,
       inference: {
         chat: async (params) => this.config.inference.chat(params),
       },

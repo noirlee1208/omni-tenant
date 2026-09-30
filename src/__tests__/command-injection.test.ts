@@ -7,7 +7,7 @@
  * - Input validation rules (package names, skill names, git hashes, etc.)
  * - Registry functions use safe alternatives (no shell interpolation)
  * - Loader uses safe binary check
- * - pull_upstream uses conway.exec() not host execSync
+ * - pull_upstream uses omni.exec() not host execSync
  * - upstream.ts uses execFileSync with argument arrays
  */
 
@@ -567,14 +567,14 @@ describe("Source code injection safety", () => {
     expect(source).toMatch(/execFileSync\s*\(\s*"git"/);
   });
 
-  it("registry.ts uses execFileSync not conway.exec with interpolation", async () => {
+  it("registry.ts uses execFileSync not omni.exec with interpolation", async () => {
     const fs = await import("fs");
     const source = fs.readFileSync(
       new URL("../skills/registry.ts", import.meta.url).pathname.replace("/src/__tests__/../", "/src/"),
       "utf-8",
     );
-    // Should NOT have template literals in conway.exec calls
-    expect(source).not.toMatch(/conway\.exec\s*\(\s*`/);
+    // Should NOT have template literals in omni.exec calls
+    expect(source).not.toMatch(/omni\.exec\s*\(\s*`/);
     // Should use execFileSync or fs.* instead
     expect(source).toMatch(/execFileSync\s*\(/);
     expect(source).toMatch(/fs\.mkdirSync\(/);
@@ -593,7 +593,7 @@ describe("Source code injection safety", () => {
     expect(source).toMatch(/execFileSync\s*\(\s*"which"/);
   });
 
-  it("tools.ts pull_upstream uses conway.exec not host execSync", async () => {
+  it("tools.ts pull_upstream uses omni.exec not host execSync", async () => {
     const fs = await import("fs");
     const source = fs.readFileSync(
       new URL("../agent/tools.ts", import.meta.url).pathname.replace("/src/__tests__/../", "/src/"),
@@ -605,7 +605,7 @@ describe("Source code injection safety", () => {
       source.indexOf("name: \"modify_heartbeat\""),
     );
     expect(pullSection).not.toMatch(/import\s*\(\s*"child_process"\s*\)/);
-    expect(pullSection).toMatch(/ctx\.conway\.exec\(/);
+    expect(pullSection).toMatch(/ctx\.omni\.exec\(/);
   });
 
   it("tools.ts has defense-in-depth comment on FORBIDDEN_COMMAND_PATTERNS", async () => {

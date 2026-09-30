@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { BUILTIN_TASKS } from "../heartbeat/tasks.js";
 import {
-  MockConwayClient,
+  MockOmniClient,
   MockSocialClient,
   createTestDb,
   createTestIdentity,
@@ -36,11 +36,11 @@ function createMockTickContext(db: AutomatonDatabase, overrides?: Partial<TickCo
 
 describe("Heartbeat Tasks", () => {
   let db: AutomatonDatabase;
-  let conway: MockConwayClient;
+  let omni: MockOmniClient;
 
   beforeEach(() => {
     db = createTestDb();
-    conway = new MockConwayClient();
+    omni = new MockOmniClient();
   });
 
   afterEach(() => {
@@ -54,7 +54,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
         // no social client
       };
 
@@ -92,7 +92,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
         social,
       };
 
@@ -142,7 +142,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
         social,
       };
 
@@ -168,7 +168,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
         social,
       };
 
@@ -199,7 +199,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
         social,
       };
 
@@ -226,7 +226,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
       };
 
       const result = await BUILTIN_TASKS.heartbeat_ping(tickCtx, taskCtx);
@@ -248,7 +248,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
       };
 
       const result = await BUILTIN_TASKS.heartbeat_ping(tickCtx, taskCtx);
@@ -268,7 +268,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
       };
 
       const result = await BUILTIN_TASKS.heartbeat_ping(tickCtx, taskCtx);
@@ -290,7 +290,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
       };
 
       // Set previous tier to same
@@ -312,7 +312,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
       };
 
       // Previous tier was normal
@@ -333,7 +333,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
       };
 
       // No previous tier set
@@ -355,7 +355,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
       };
 
       const result = await BUILTIN_TASKS.check_usdc_balance(tickCtx, taskCtx);
@@ -373,7 +373,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
       };
 
       const result = await BUILTIN_TASKS.check_usdc_balance(tickCtx, taskCtx);
@@ -391,7 +391,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
       };
 
       const result = await BUILTIN_TASKS.check_usdc_balance(tickCtx, taskCtx);
@@ -409,7 +409,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
       };
 
       const result = await BUILTIN_TASKS.health_check(tickCtx, taskCtx);
@@ -419,14 +419,14 @@ describe("Heartbeat Tasks", () => {
     });
 
     it("wakes when sandbox exec fails", async () => {
-      conway.exec = async () => ({ stdout: "", stderr: "unhealthy", exitCode: 1 });
+      omni.exec = async () => ({ stdout: "", stderr: "unhealthy", exitCode: 1 });
 
       const tickCtx = createMockTickContext(db);
       const taskCtx: HeartbeatLegacyContext = {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
       };
 
       const result = await BUILTIN_TASKS.health_check(tickCtx, taskCtx);
@@ -436,7 +436,7 @@ describe("Heartbeat Tasks", () => {
     });
 
     it("wakes when sandbox exec throws", async () => {
-      conway.exec = async () => {
+      omni.exec = async () => {
         throw new Error("sandbox unreachable");
       };
 
@@ -445,7 +445,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
       };
 
       const result = await BUILTIN_TASKS.health_check(tickCtx, taskCtx);
@@ -464,7 +464,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
       };
 
       const result = await BUILTIN_TASKS.refresh_models(tickCtx, taskCtx);
@@ -490,7 +490,7 @@ describe("Heartbeat Tasks", () => {
         identity: createTestIdentity(),
         config: createTestConfig(),
         db,
-        conway,
+        omni,
       };
 
       // Run heartbeat_ping — it should use ctx.creditBalance
@@ -504,7 +504,7 @@ describe("Heartbeat Tasks", () => {
       expect(creditCheck.credits).toBe(7777);
 
       // No direct getCreditsBalance calls should have been made by these tasks
-      // (conway.getCreditsBalance is only called during buildTickContext, not by tasks)
+      // (omni.getCreditsBalance is only called during buildTickContext, not by tasks)
     });
   });
 });

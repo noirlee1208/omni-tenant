@@ -16,7 +16,7 @@
 import fs from "fs";
 import path from "path";
 import type {
-  ConwayClient,
+  OmniClient,
   AutomatonDatabase,
 } from "../types.js";
 import { logModification } from "./audit-log.js";
@@ -218,7 +218,7 @@ function isRateLimited(db: AutomatonDatabase): boolean {
  * 7. Audit log entry
  */
 export async function editFile(
-  conway: ConwayClient,
+  omni: OmniClient,
   db: AutomatonDatabase,
   filePath: string,
   newContent: string,
@@ -260,7 +260,7 @@ export async function editFile(
   // 5. Read current content for diff
   let oldContent = "";
   try {
-    oldContent = await conway.readFile(filePath);
+    oldContent = await omni.readFile(filePath);
   } catch {
     oldContent = "(new file)";
   }
@@ -268,14 +268,14 @@ export async function editFile(
   // 6. Pre-modification git snapshot (in repo root, not ~/.automaton/)
   try {
     const { gitCommit } = await import("../git/tools.js");
-    await gitCommit(conway, process.cwd(), `pre-modify: ${reason}`);
+    await gitCommit(omni, process.cwd(), `pre-modify: ${reason}`);
   } catch {
     // Git not available -- proceed without snapshot
   }
 
   // 7. Write new content
   try {
-    await conway.writeFile(filePath, newContent);
+    await omni.writeFile(filePath, newContent);
   } catch (err: any) {
     return {
       success: false,
@@ -295,7 +295,7 @@ export async function editFile(
   // 9. Post-modification git commit (in repo root)
   try {
     const { gitCommit } = await import("../git/tools.js");
-    await gitCommit(conway, process.cwd(), `self-mod: ${reason}`);
+    await gitCommit(omni, process.cwd(), `self-mod: ${reason}`);
   } catch {
     // Git not available -- proceed without commit
   }
@@ -303,7 +303,7 @@ export async function editFile(
   // 10. Rebuild if source file was edited
   if (/\.(ts|js|tsx|jsx)$/.test(filePath)) {
     try {
-      await conway.exec("npm run build", 60_000);
+      await omni.exec("npm run build", 60_000);
     } catch {
       return { success: true, error: "File edited but rebuild failed. Run 'npm run build' manually." };
     }

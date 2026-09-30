@@ -14,7 +14,7 @@
 import type {
   AutomatonConfig,
   AutomatonDatabase,
-  ConwayClient,
+  OmniClient,
   AutomatonIdentity,
   HeartbeatConfig,
   HeartbeatTaskFn,
@@ -37,7 +37,7 @@ export interface HeartbeatDaemonOptions {
   heartbeatConfig: HeartbeatConfig;
   db: AutomatonDatabase;
   rawDb: DatabaseType;
-  conway: ConwayClient;
+  omni: OmniClient;
   social?: SocialClientInterface;
   onWakeRequest?: (reason: string) => void;
 }
@@ -58,7 +58,7 @@ export interface HeartbeatDaemon {
 export function createHeartbeatDaemon(
   options: HeartbeatDaemonOptions,
 ): HeartbeatDaemon {
-  const { identity, config, heartbeatConfig, db, rawDb, conway, social, onWakeRequest } = options;
+  const { identity, config, heartbeatConfig, db, rawDb, omni, social, onWakeRequest } = options;
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let running = false;
 
@@ -66,7 +66,7 @@ export function createHeartbeatDaemon(
     identity,
     config,
     db,
-    conway,
+    omni,
     social,
   };
 
@@ -156,7 +156,7 @@ export function createHeartbeatDaemon(
 
   const forceRun = async (taskName: string): Promise<void> => {
     const context = await import("./tick-context.js").then((m) =>
-      m.buildTickContext(rawDb, conway, heartbeatConfig, identity.address, identity.chainType),
+      m.buildTickContext(rawDb, omni, heartbeatConfig, identity.address, identity.chainType),
     );
     await scheduler.executeTask(taskName, context);
   };

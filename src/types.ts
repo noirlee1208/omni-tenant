@@ -1,5 +1,5 @@
 /**
- * Conway Automaton - Type Definitions
+ * Omni Automaton - Type Definitions
  *
  * All shared interfaces for the sovereign AI agent runtime.
  */
@@ -45,10 +45,10 @@ export interface AutomatonConfig {
   genesisPrompt: string;
   creatorMessage?: string;
   creatorAddress: string;
-  registeredWithConway: boolean;
+  registeredWithOmni: boolean;
   sandboxId: string;
-  conwayApiUrl: string;
-  conwayApiKey: string;
+  omniApiUrl: string;
+  omniApiKey: string;
   openaiApiKey?: string;
   anthropicApiKey?: string;
   ollamaBaseUrl?: string;
@@ -78,7 +78,7 @@ export interface AutomatonConfig {
 }
 
 export const DEFAULT_CONFIG: Partial<AutomatonConfig> = {
-  conwayApiUrl: "https://api.conway.tech",
+  omniApiUrl: "https://api.omni.tech",
   inferenceModel: "gpt-5.2",
   maxTokensPerTurn: 4096,
   heartbeatConfigPath: "~/.automaton/heartbeat.yml",
@@ -89,7 +89,7 @@ export const DEFAULT_CONFIG: Partial<AutomatonConfig> = {
   maxChildren: 3,
   maxTurnsPerCycle: 25,
   childSandboxMemoryMb: 1024,
-  socialRelayUrl: "https://social.conway.tech",
+  socialRelayUrl: "https://social.omni.tech",
 };
 
 // ─── Agent State ─────────────────────────────────────────────────
@@ -153,7 +153,7 @@ export interface AutomatonTool {
 
 export type ToolCategory =
   | "vm"
-  | "conway"
+  | "omni"
   | "self_mod"
   | "financial"
   | "survival"
@@ -167,7 +167,7 @@ export interface ToolContext {
   identity: AutomatonIdentity;
   config: AutomatonConfig;
   db: AutomatonDatabase;
-  conway: ConwayClient;
+  omni: OmniClient;
   inference: InferenceClient;
   social?: SocialClientInterface;
 }
@@ -352,9 +352,9 @@ export interface InferenceToolDefinition {
   };
 }
 
-// ─── Conway Client ───────────────────────────────────────────────
+// ─── Omni Client ───────────────────────────────────────────────
 
-export interface ConwayClient {
+export interface OmniClient {
   exec(command: string, timeout?: number): Promise<ExecResult>;
   writeFile(path: string, content: string): Promise<void>;
   readFile(path: string): Promise<string>;
@@ -397,7 +397,7 @@ export interface ConwayClient {
   // Model discovery
   listModels(): Promise<ModelInfo[]>;
   /** Create a new client scoped to a specific sandbox ID. */
-  createScopedClient(targetSandboxId: string): ConwayClient;
+  createScopedClient(targetSandboxId: string): OmniClient;
 }
 
 export interface ExecResult {
@@ -586,7 +586,7 @@ export const DEFAULT_TREASURY_POLICY: TreasuryPolicy = {
   maxDailyTransferCents: 25000,
   minimumReserveCents: 1000,
   maxX402PaymentCents: 100,
-  x402AllowedDomains: ['conway.tech'],
+  x402AllowedDomains: ['omni.tech'],
   transferCooldownMs: 0,
   maxTransfersPerTurn: 2,
   maxInferenceDailyCents: 50000,
@@ -899,7 +899,7 @@ export interface HeartbeatLegacyContext {
   identity: AutomatonIdentity;
   config: AutomatonConfig;
   db: AutomatonDatabase;
-  conway: ConwayClient;
+  omni: OmniClient;
   social?: SocialClientInterface;
 }
 
@@ -1142,7 +1142,7 @@ export const DEFAULT_MEMORY_BUDGET: MemoryBudget = {
 
 // === Phase 2.3: Inference & Model Strategy Types ===
 
-export type ModelProvider = "openai" | "anthropic" | "conway" | "ollama" | "other";
+export type ModelProvider = "openai" | "anthropic" | "omni" | "ollama" | "other";
 
 export type InferenceTaskType =
   | "agent_turn"

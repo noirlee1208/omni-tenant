@@ -8,13 +8,13 @@
 import type {
   AutomatonConfig,
   AutomatonDatabase,
-  ConwayClient,
+  OmniClient,
   AutomatonIdentity,
   FinancialState,
   SurvivalTier,
 } from "../types.js";
-import { getSurvivalTier, formatCredits } from "../conway/credits.js";
-import { getUsdcBalance } from "../conway/x402.js";
+import { getSurvivalTier, formatCredits } from "../omni/credits.js";
+import { getUsdcBalance } from "../omni/x402.js";
 
 export interface ResourceStatus {
   financial: FinancialState;
@@ -29,13 +29,13 @@ export interface ResourceStatus {
  */
 export async function checkResources(
   identity: AutomatonIdentity,
-  conway: ConwayClient,
+  omni: OmniClient,
   db: AutomatonDatabase,
 ): Promise<ResourceStatus> {
   // Check credits
   let creditsCents = 0;
   try {
-    creditsCents = await conway.getCreditsBalance();
+    creditsCents = await omni.getCreditsBalance();
   } catch {}
 
   // Check USDC
@@ -47,7 +47,7 @@ export async function checkResources(
   // Check sandbox health
   let sandboxHealthy = true;
   try {
-    const result = await conway.exec("echo ok", 5000);
+    const result = await omni.exec("echo ok", 5000);
     sandboxHealthy = result.exitCode === 0;
   } catch {
     sandboxHealthy = false;

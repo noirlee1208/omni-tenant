@@ -9,7 +9,7 @@ import { runAgentLoop } from "../agent/loop.js";
 import { Orchestrator } from "../orchestration/orchestrator.js";
 import {
   MockInferenceClient,
-  MockConwayClient,
+  MockOmniClient,
   MockSocialClient,
   createTestDb,
   createTestIdentity,
@@ -21,13 +21,13 @@ import type { AutomatonDatabase, AgentTurn, AgentState } from "../types.js";
 
 describe("Agent Loop", () => {
   let db: AutomatonDatabase;
-  let conway: MockConwayClient;
+  let omni: MockOmniClient;
   let identity: ReturnType<typeof createTestIdentity>;
   let config: ReturnType<typeof createTestConfig>;
 
   beforeEach(() => {
     db = createTestDb();
-    conway = new MockConwayClient();
+    omni = new MockOmniClient();
     identity = createTestIdentity();
     config = createTestConfig();
   });
@@ -51,7 +51,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
       onTurnComplete: (turn) => turns.push(turn),
     });
@@ -65,9 +65,9 @@ describe("Agent Loop", () => {
     expect(execTurn!.toolCalls[0].name).toBe("exec");
     expect(execTurn!.toolCalls[0].error).toBeUndefined();
 
-    // Verify conway.exec was called
-    expect(conway.execCalls.length).toBeGreaterThanOrEqual(1);
-    expect(conway.execCalls[0].command).toBe("echo hello");
+    // Verify omni.exec was called
+    expect(omni.execCalls.length).toBeGreaterThanOrEqual(1);
+    expect(omni.execCalls[0].command).toBe("echo hello");
   });
 
   it("forbidden patterns blocked", async () => {
@@ -84,7 +84,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
       onTurnComplete: (turn) => turns.push(turn),
     });
@@ -97,12 +97,12 @@ describe("Agent Loop", () => {
     const execCall = execTurn!.toolCalls.find((tc) => tc.name === "exec");
     expect(execCall!.result).toContain("Blocked");
 
-    // conway.exec should NOT have been called
-    expect(conway.execCalls.length).toBe(0);
+    // omni.exec should NOT have been called
+    expect(omni.execCalls.length).toBe(0);
   });
 
   it("low credits forces low-compute mode", async () => {
-    conway.creditsCents = 50; // Below $1 threshold -> critical
+    omni.creditsCents = 50; // Below $1 threshold -> critical
 
     const inference = new MockInferenceClient([
       noToolResponse("Low on credits."),
@@ -112,7 +112,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
     });
 
@@ -130,7 +130,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
     });
 
@@ -147,7 +147,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
     });
 
@@ -181,7 +181,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
       onTurnComplete: (turn) => turns.push(turn),
     });
@@ -212,7 +212,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
       onTurnComplete: (turn) => turns.push(turn),
     });
@@ -238,7 +238,7 @@ describe("Agent Loop", () => {
       identity,
       config: { ...config, logLevel: "debug" },
       db,
-      conway,
+      omni,
       inference: failingInference,
     });
 
@@ -256,7 +256,7 @@ describe("Agent Loop", () => {
     db.setKV("last_known_balance", JSON.stringify({ creditsCents: 5000, usdcBalance: 1.0 }));
 
     // Make credits API fail
-    conway.getCreditsBalance = async () => {
+    omni.getCreditsBalance = async () => {
       throw new Error("API down");
     };
 
@@ -271,7 +271,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
     });
 
@@ -307,7 +307,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
       onTurnComplete: (turn) => turns.push(turn),
     });
@@ -330,7 +330,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
       onStateChange: (state) => stateChanges.push(state),
     });
@@ -357,7 +357,7 @@ describe("Agent Loop", () => {
       identity,
       config: lowLimitConfig,
       db,
-      conway,
+      omni,
       inference,
       onTurnComplete: (turn) => turns.push(turn),
     });
@@ -379,7 +379,7 @@ describe("Agent Loop", () => {
       identity,
       config: lowLimitConfig,
       db,
-      conway,
+      omni,
       inference,
     });
 
@@ -408,7 +408,7 @@ describe("Agent Loop", () => {
       identity,
       config: limit5Config,
       db,
-      conway,
+      omni,
       inference,
       onTurnComplete: (turn) => turns.push(turn),
     });
@@ -419,7 +419,7 @@ describe("Agent Loop", () => {
   });
 
   it("zero credits enters critical tier, not dead", async () => {
-    conway.creditsCents = 0; // $0 -> critical tier (agent stays alive)
+    omni.creditsCents = 0; // $0 -> critical tier (agent stays alive)
 
     const inference = new MockInferenceClient([
       noToolResponse("I have no credits but I'm still alive."),
@@ -431,7 +431,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
       onStateChange: (state) => stateChanges.push(state),
     });
@@ -482,7 +482,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
       onTurnComplete: (turn) => turns.push(turn),
     });
@@ -522,7 +522,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
       onTurnComplete: (turn) => turns.push(turn),
     });
@@ -574,7 +574,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
       onTurnComplete: (turn) => turns.push(turn),
     });
@@ -627,7 +627,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
       onTurnComplete: (turn) => turns.push(turn),
       onStateChange: (state) => stateChanges.push(state),
@@ -689,7 +689,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
       onTurnComplete: (turn) => turns.push(turn),
     });
@@ -747,7 +747,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
       onTurnComplete: (turn) => turns.push(turn),
     });
@@ -766,9 +766,9 @@ describe("Agent Loop", () => {
   });
 
   it("read_file turns are retained in context (not classified as idle)", async () => {
-    conway.files["/tmp/one.txt"] = "one";
-    conway.files["/tmp/two.txt"] = "two";
-    conway.files["/tmp/three.txt"] = "three";
+    omni.files["/tmp/one.txt"] = "one";
+    omni.files["/tmp/two.txt"] = "two";
+    omni.files["/tmp/three.txt"] = "three";
 
     const inference = new MockInferenceClient([
       toolCallResponse([{ name: "read_file", arguments: { path: "/tmp/one.txt" } }]),
@@ -783,7 +783,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
       onTurnComplete: (turn) => turns.push(turn),
     });
@@ -817,7 +817,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
     });
 
@@ -865,7 +865,7 @@ describe("Agent Loop", () => {
       identity,
       config,
       db,
-      conway,
+      omni,
       inference,
     });
 

@@ -8,7 +8,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { DurableScheduler } from "../heartbeat/scheduler.js";
 import { buildTickContext } from "../heartbeat/tick-context.js";
 import {
-  MockConwayClient,
+  MockOmniClient,
   createTestDb,
   createTestIdentity,
   createTestConfig,
@@ -49,13 +49,13 @@ const DEFAULT_HB_CONFIG: HeartbeatConfig = {
 
 function createLegacyContext(
   db: AutomatonDatabase,
-  conway: MockConwayClient,
+  omni: MockOmniClient,
 ): HeartbeatLegacyContext {
   return {
     identity: createTestIdentity(),
     config: createTestConfig(),
     db,
-    conway,
+    omni,
   };
 }
 
@@ -88,12 +88,12 @@ function seedScheduleRow(
 describe("DurableScheduler", () => {
   let db: AutomatonDatabase;
   let rawDb: DatabaseType;
-  let conway: MockConwayClient;
+  let omni: MockOmniClient;
 
   beforeEach(() => {
     db = createTestDb();
     rawDb = db.raw;
-    conway = new MockConwayClient();
+    omni = new MockOmniClient();
   });
 
   afterEach(() => {
@@ -115,7 +115,7 @@ describe("DurableScheduler", () => {
         rawDb,
         DEFAULT_HB_CONFIG,
         tasks,
-        createLegacyContext(db, conway),
+        createLegacyContext(db, omni),
       );
 
       // Start two ticks simultaneously
@@ -142,7 +142,7 @@ describe("DurableScheduler", () => {
         rawDb,
         DEFAULT_HB_CONFIG,
         tasks,
-        createLegacyContext(db, conway),
+        createLegacyContext(db, omni),
       );
 
       await scheduler.tick();
@@ -319,7 +319,7 @@ describe("DurableScheduler", () => {
         rawDb,
         DEFAULT_HB_CONFIG,
         tasks,
-        createLegacyContext(db, conway),
+        createLegacyContext(db, omni),
       );
 
       await scheduler.tick();
@@ -342,7 +342,7 @@ describe("DurableScheduler", () => {
         rawDb,
         DEFAULT_HB_CONFIG,
         tasks,
-        createLegacyContext(db, conway),
+        createLegacyContext(db, omni),
       );
 
       await scheduler.tick();
@@ -356,11 +356,11 @@ describe("DurableScheduler", () => {
 
   describe("TickContext building", () => {
     it("fetches balance once and builds context", async () => {
-      conway.creditsCents = 5_000;
+      omni.creditsCents = 5_000;
 
       const ctx = await buildTickContext(
         rawDb,
-        conway,
+        omni,
         DEFAULT_HB_CONFIG,
       );
 
@@ -375,13 +375,13 @@ describe("DurableScheduler", () => {
 
     it("handles API failure gracefully", async () => {
       // Make getCreditsBalance throw
-      conway.getCreditsBalance = async () => {
+      omni.getCreditsBalance = async () => {
         throw new Error("API unavailable");
       };
 
       const ctx = await buildTickContext(
         rawDb,
-        conway,
+        omni,
         DEFAULT_HB_CONFIG,
       );
 

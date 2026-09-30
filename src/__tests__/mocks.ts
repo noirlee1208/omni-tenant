@@ -8,7 +8,7 @@ import type {
   InferenceResponse,
   InferenceOptions,
   ChatMessage,
-  ConwayClient,
+  OmniClient,
   ExecResult,
   PortInfo,
   SandboxInfo,
@@ -110,9 +110,9 @@ export function toolCallResponse(
   };
 }
 
-// ─── Mock Conway Client ─────────────────────────────────────────
+// ─── Mock Omni Client ─────────────────────────────────────────
 
-export class MockConwayClient implements ConwayClient {
+export class MockOmniClient implements OmniClient {
   execCalls: { command: string; timeout?: number }[] = [];
   creditsCents = 10_000; // $100 default
   files: Record<string, string> = {};
@@ -133,7 +133,7 @@ export class MockConwayClient implements ConwayClient {
   async exposePort(port: number): Promise<PortInfo> {
     return {
       port,
-      publicUrl: `https://test-${port}.conway.tech`,
+      publicUrl: `https://test-${port}.omni.tech`,
       sandboxId: "test-sandbox",
     };
   }
@@ -225,7 +225,7 @@ export class MockConwayClient implements ConwayClient {
     return { automaton: {} };
   }
 
-  createScopedClient(_targetSandboxId: string): ConwayClient {
+  createScopedClient(_targetSandboxId: string): OmniClient {
     // Return self so spies on exec/writeFile propagate to scoped clients
     return this;
   }
@@ -342,10 +342,10 @@ export function createTestConfig(
     name: "test-automaton",
     genesisPrompt: "You are a test automaton.",
     creatorAddress: "0xabcdefabcdefabcdefabcdefabcdefabcdefabcd" as `0x${string}`,
-    registeredWithConway: true,
+    registeredWithOmni: true,
     sandboxId: "test-sandbox-id",
-    conwayApiUrl: "https://api.conway.tech",
-    conwayApiKey: "test-api-key",
+    omniApiUrl: "https://api.omni.tech",
+    omniApiKey: "test-api-key",
     inferenceModel: "mock-model",
     maxTokensPerTurn: 4096,
     heartbeatConfigPath: "/tmp/test-heartbeat.yml",
@@ -356,7 +356,7 @@ export function createTestConfig(
     skillsDir: "/tmp/test-skills",
     maxChildren: 3,
     maxTurnsPerCycle: 25,
-    socialRelayUrl: "https://social.conway.tech",
+    socialRelayUrl: "https://social.omni.tech",
     ...overrides,
   };
 }

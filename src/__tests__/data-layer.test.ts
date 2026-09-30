@@ -104,7 +104,7 @@ describe("SSRF Protection", () => {
 
     it("allows public hostnames", () => {
       expect(isInternalNetwork("example.com")).toBe(false);
-      expect(isInternalNetwork("api.conway.tech")).toBe(false);
+      expect(isInternalNetwork("api.omni.tech")).toBe(false);
     });
   });
 

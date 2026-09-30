@@ -18,7 +18,7 @@ import { promptOptional, closePrompts } from "./prompts.js";
 const PROVIDER_LABEL: Record<string, string> = {
   openai: "OpenAI",
   anthropic: "Anthropic",
-  conway: "Conway",
+  omni: "Omni",
   ollama: "Ollama",
   other: "Other",
 };

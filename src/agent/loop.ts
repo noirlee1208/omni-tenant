@@ -10,7 +10,7 @@ import type {
   AutomatonIdentity,
   AutomatonConfig,
   AutomatonDatabase,
-  ConwayClient,
+  OmniClient,
   InferenceClient,
   AgentState,
   AgentTurn,
@@ -35,8 +35,8 @@ import {
   executeTool,
 } from "./tools.js";
 import { sanitizeInput } from "./injection-defense.js";
-import { getSurvivalTier } from "../conway/credits.js";
-import { getUsdcBalance } from "../conway/x402.js";
+import { getSurvivalTier } from "../omni/credits.js";
+import { getUsdcBalance } from "../omni/x402.js";
 import {
   claimInboxMessages,
   markInboxProcessed,
@@ -75,7 +75,7 @@ export interface AgentLoopOptions {
   identity: AutomatonIdentity;
   config: AutomatonConfig;
   db: AutomatonDatabase;
-  conway: ConwayClient;
+  omni: OmniClient;
   inference: InferenceClient;
   social?: SocialClientInterface;
   skills?: Skill[];
@@ -93,7 +93,7 @@ export interface AgentLoopOptions {
 export async function runAgentLoop(
   options: AgentLoopOptions,
 ): Promise<void> {
-  const { identity, config, db, conway, inference, social, skills, policyEngine, spendTracker, onStateChange, onTurnComplete, ollamaBaseUrl } =
+  const { identity, config, db, omni, inference, social, skills, policyEngine, spendTracker, onStateChange, onTurnComplete, ollamaBaseUrl } =
     options;
 
   const builtinTools = createBuiltinTools(identity.sandboxId);
@@ -103,7 +103,7 @@ export async function runAgentLoop(
     identity,
     config,
     db,
-    conway,
+    omni,
     inference,
     social,
   };
@@ -135,25 +135,25 @@ export async function runAgentLoop(
 
       // Bridge automaton config API keys to env vars for the provider registry.
       // The registry reads keys from process.env; the automaton config may have
-      // them from config.json or Conway provisioning.
+      // them from config.json or Omni provisioning.
       if (config.openaiApiKey && !process.env.OPENAI_API_KEY) {
         process.env.OPENAI_API_KEY = config.openaiApiKey;
       }
       if (config.anthropicApiKey && !process.env.ANTHROPIC_API_KEY) {
         process.env.ANTHROPIC_API_KEY = config.anthropicApiKey;
       }
-      // Conway Compute API is OpenAI-compatible. Use it as fallback when no
-      // direct OpenAI key is available. The conwayApiKey is always present
+      // Omni Compute API is OpenAI-compatible. Use it as fallback when no
+      // direct OpenAI key is available. The omniApiKey is always present
       // (required for sandbox operations), so this ensures the orchestrator
       // can always make inference calls.
-      if (config.conwayApiKey && !process.env.CONWAY_API_KEY) {
-        process.env.CONWAY_API_KEY = config.conwayApiKey;
+      if (config.omniApiKey && !process.env.OMNI_API_KEY) {
+        process.env.OMNI_API_KEY = config.omniApiKey;
       }
-      // If no OpenAI key is set but Conway key is available, use Conway as
-      // the OpenAI provider (Conway Compute is OpenAI API-compatible).
-      if (!process.env.OPENAI_API_KEY && config.conwayApiKey) {
-        process.env.OPENAI_API_KEY = config.conwayApiKey;
-        process.env.OPENAI_BASE_URL = `${config.conwayApiUrl}/v1`;
+      // If no OpenAI key is set but Omni key is available, use Omni as
+      // the OpenAI provider (Omni Compute is OpenAI API-compatible).
+      if (!process.env.OPENAI_API_KEY && config.omniApiKey) {
+        process.env.OPENAI_API_KEY = config.omniApiKey;
+        process.env.OPENAI_BASE_URL = `${config.omniApiUrl}/v1`;
       }
 
       const providersPath = path.join(
@@ -163,15 +163,15 @@ export async function runAgentLoop(
       );
       const registry = ProviderRegistry.fromConfig(providersPath);
 
-      // If OPENAI_BASE_URL was set (Conway fallback), update the default
-      // provider's baseUrl so the OpenAI client points to Conway Compute.
+      // If OPENAI_BASE_URL was set (Omni fallback), update the default
+      // provider's baseUrl so the OpenAI client points to Omni Compute.
       if (process.env.OPENAI_BASE_URL) {
         registry.overrideBaseUrl("openai", process.env.OPENAI_BASE_URL);
       }
 
       const unifiedInference = new UnifiedInferenceClient(registry);
       const agentTracker = new SimpleAgentTracker(db);
-      const funding = new SimpleFundingProtocol(conway, identity, db);
+      const funding = new SimpleFundingProtocol(omni, identity, db);
       const messaging = new ColonyMessaging(
         new LocalDBTransport(db),
         db,
@@ -184,11 +184,11 @@ export async function runAgentLoop(
       const workerInference = createWorkerInferenceBridge(unifiedInference);
 
       // Local worker pool: runs inference-driven agents in-process
-      // as async tasks. Falls back from Conway sandbox spawning.
+      // as async tasks. Falls back from Omni sandbox spawning.
       const initializedWorkerPool = new LocalWorkerPool({
         db: db.raw,
         inference: workerInference,
-        conway,
+        omni,
         harnessRegistry,
         identity,
         config,
@@ -221,7 +221,7 @@ export async function runAgentLoop(
         config: {
           ...config,
           spawnAgent: async (task: any) => {
-            // Try Conway sandbox spawn first (production)
+            // Try Omni sandbox spawn first (production)
             try {
               const { generateGenesisConfig } = await import("../replication/genesis.js");
               const { spawnChild } = await import("../replication/spawn.js");
@@ -234,7 +234,7 @@ export async function runAgentLoop(
               });
 
               const lifecycle = new ChildLifecycle(db.raw);
-              const child = await spawnChild(conway, identity, db, genesis, lifecycle);
+              const child = await spawnChild(omni, identity, db, genesis, lifecycle);
 
               return {
                 address: child.address,
@@ -255,9 +255,9 @@ export async function runAgentLoop(
                 if (cooldownExpired) {
                   db.setKV("last_sandbox_topup_attempt", new Date().toISOString());
                   try {
-                    const { topupForSandbox } = await import("../conway/topup.js");
+                    const { topupForSandbox } = await import("../omni/topup.js");
                     const topupResult = await topupForSandbox({
-                      apiUrl: config.conwayApiUrl,
+                      apiUrl: config.omniApiUrl,
                       account: identity.account,
                       error: sandboxError,
                       chainType: config.chainType || identity.chainType || "evm",
@@ -279,7 +279,7 @@ export async function runAgentLoop(
                           specialization: `${retryRole}: ${task.title}`,
                         });
                         const retryLifecycle = new RetryLifecycle(db.raw);
-                        const child = await retrySpawn(conway, identity, db, retryGenesis, retryLifecycle);
+                        const child = await retrySpawn(omni, identity, db, retryGenesis, retryLifecycle);
                         return {
                           address: child.address,
                           name: child.name,
@@ -301,8 +301,8 @@ export async function runAgentLoop(
                 }
               }
 
-              // Conway sandbox unavailable — fall back to local worker
-              logger.info("Conway sandbox unavailable, spawning local worker", {
+              // Omni sandbox unavailable — fall back to local worker
+              logger.info("Omni sandbox unavailable, spawning local worker", {
                 taskId: task.id,
                 error: sandboxError instanceof Error ? sandboxError.message : String(sandboxError),
               });
@@ -358,7 +358,7 @@ export async function runAgentLoop(
   onStateChange?.("waking");
 
   // Get financial state
-  let financial = await getFinancialState(conway, identity.address, db, config.chainType || identity.chainType || "evm");
+  let financial = await getFinancialState(omni, identity.address, db, config.chainType || identity.chainType || "evm");
 
   // Check if this is the first run
   const isFirstRun = db.getTurnCount() === 0;
@@ -426,7 +426,7 @@ export async function runAgentLoop(
       }
 
       // Refresh financial state periodically
-      financial = await getFinancialState(conway, identity.address, db, config.chainType || identity.chainType || "evm");
+      financial = await getFinancialState(omni, identity.address, db, config.chainType || identity.chainType || "evm");
 
       // Check survival tier
       // api_unreachable: creditsCents === -1 means API failed with no cache.
@@ -450,9 +450,9 @@ export async function runAgentLoop(
           if (cooldownExpired) {
             db.setKV("last_inline_topup_attempt", new Date().toISOString());
             try {
-              const { bootstrapTopup } = await import("../conway/topup.js");
+              const { bootstrapTopup } = await import("../omni/topup.js");
               const topupResult = await bootstrapTopup({
-                apiUrl: config.conwayApiUrl,
+                apiUrl: config.omniApiUrl,
                 account: identity.account,
                 creditsCents: financial.creditsCents,
                 chainType: config.chainType || identity.chainType || "evm",
@@ -461,7 +461,7 @@ export async function runAgentLoop(
                 log(config, `[AUTO-TOPUP] Bought $${topupResult.amountUsd} credits from USDC mid-loop`);
                 // Re-fetch financial state after topup so the rest of
                 // the turn sees the updated balance.
-                financial = await getFinancialState(conway, identity.address, db, config.chainType || identity.chainType || "evm");
+                financial = await getFinancialState(omni, identity.address, db, config.chainType || identity.chainType || "evm");
               }
             } catch (err: any) {
               logger.warn(`Inline auto-topup failed: ${err.message}`);
@@ -944,7 +944,7 @@ let _lastKnownCredits = 0;
 let _lastKnownUsdc = 0;
 
 async function getFinancialState(
-  conway: ConwayClient,
+  omni: OmniClient,
   address: string,
   db?: AutomatonDatabase,
   chainType?: string,
@@ -953,7 +953,7 @@ async function getFinancialState(
   let usdcBalance = _lastKnownUsdc;
 
   try {
-    creditsCents = await conway.getCreditsBalance();
+    creditsCents = await omni.getCreditsBalance();
     if (creditsCents > 0) _lastKnownCredits = creditsCents;
   } catch (error) {
     logger.error("Credits balance fetch failed", error instanceof Error ? error : undefined);
