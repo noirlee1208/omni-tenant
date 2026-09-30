@@ -1,6 +1,10 @@
 #!/usr/bin/env node
 import { startTelegramDaemon } from "./social/telegram.js";
 import "dotenv/config";
+
+// Tự động ép hệ thống gọi sang mạng OpenRouter (bỏ qua OpenAI)
+process.env.OPENAI_BASE_URL = "https://openrouter.ai/api/v1";
+
 /**
  * Conway Automaton Runtime
  *
@@ -293,6 +297,7 @@ async function run(): Promise<void> {
     maxTokens: config.maxTokensPerTurn,
     lowComputeModel: config.modelStrategy?.lowComputeModel || "gpt-5-mini",
     openaiApiKey: config.openaiApiKey,
+    openaiBaseUrl: process.env.OPENAI_BASE_URL,
     anthropicApiKey: config.anthropicApiKey,
     ollamaBaseUrl,
     getModelProvider: (modelId) => modelRegistry.get(modelId)?.provider,

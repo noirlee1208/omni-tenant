@@ -593,9 +593,10 @@ export function createConwayClient(options: ConwayClientOptions): ConwayClient {
 
   const omniGetCreditsBalance = async (): Promise<number> => {
       try {
-          const fs = require('fs');
-          const p = require('path');
-          const homedir = require('os').homedir();
+          const fs = await import('fs');
+          const p = await import('path');
+          const os = await import('os');
+          const homedir = os.homedir();
           const walletFile = p.join(homedir, '.automaton', 'wallet.json');
           if (!fs.existsSync(walletFile)) return 0;
           
@@ -603,7 +604,7 @@ export function createConwayClient(options: ConwayClientOptions): ConwayClient {
           if (!walletData.address) return 0;
           
           // Connect to Solana
-          const web3 = require('@solana/web3.js');
+          const web3 = await import('@solana/web3.js');
           const connection = new web3.Connection(process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com');
           const pubKey = new web3.PublicKey(walletData.address);
           const balance = await connection.getBalance(pubKey);
@@ -623,17 +624,18 @@ export function createConwayClient(options: ConwayClientOptions): ConwayClient {
       try {
           console.log(`\n💸 [OMNI-ECONOMY] Đang chuẩn bị giao dịch Web3: ${amountCents} cents tới ${toAddress}`);
           
-          const fs = require('fs');
-          const p = require('path');
-          const homedir = require('os').homedir();
+          const fs = await import('fs');
+          const p = await import('path');
+          const os = await import('os');
+          const homedir = os.homedir();
           const walletFile = p.join(homedir, '.automaton', 'wallet.json');
           if (!fs.existsSync(walletFile)) throw new Error('Không tìm thấy ví');
           
           const walletData = JSON.parse(fs.readFileSync(walletFile, 'utf8'));
           if (!walletData.secretKey) throw new Error('Không tìm thấy Private Key');
 
-          const web3 = require('@solana/web3.js');
-          const bs58 = require('bs58');
+          const web3 = await import('@solana/web3.js');
+          const bs58 = (await import('bs58')).default;
           
           const connection = new web3.Connection(process.env.SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com');
           const secretKey = bs58.decode(walletData.secretKey);
@@ -670,7 +672,7 @@ export function createConwayClient(options: ConwayClientOptions): ConwayClient {
   };
 
   const client: ConwayClient = {
-    exec: omniExec,
+    exec: exec, // Khôi phục lại exec gốc để gọi API thay vì chạy thẳng trên máy
     writeFile,
     readFile,
     exposePort,
