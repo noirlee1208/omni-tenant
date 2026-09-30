@@ -147,20 +147,6 @@ export const STATIC_MODEL_BASELINE: Omit<ModelEntry, "lastSeen" | "createdAt" | 
     enabled: true,
   },
   {
-    modelId: "google/gemini-3.1-pro",
-    provider: "omni",
-    displayName: "Gemini 3.1 Pro",
-    tierMinimum: "normal",
-    costPer1kInput: 12,    // $1.25/M
-    costPer1kOutput: 50,   // $5.00/M
-    maxTokens: 8192,
-    contextWindow: 2000000,
-    supportsTools: true,
-    supportsVision: true,
-    parameterStyle: "max_tokens",
-    enabled: true,
-  },
-  {
     modelId: "anthropic/claude-sonnet-5.5",
     provider: "anthropic",
     displayName: "Claude Sonnet 5.5",
