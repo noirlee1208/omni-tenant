@@ -160,6 +160,11 @@ export async function runSetupWizard(isFree: boolean = false): Promise<Automaton
   const constitutionSrc = path.join(process.cwd(), "constitution.md");
   const constitutionDst = path.join(automatonDir, "constitution.md");
   if (fs.existsSync(constitutionSrc)) {
+    if (fs.existsSync(constitutionDst)) {
+      try {
+        fs.chmodSync(constitutionDst, 0o644);
+      } catch (e) {}
+    }
     fs.copyFileSync(constitutionSrc, constitutionDst);
     fs.chmodSync(constitutionDst, 0o444); // read-only
     console.log(chalk.green("  constitution.md installed (read-only)"));
